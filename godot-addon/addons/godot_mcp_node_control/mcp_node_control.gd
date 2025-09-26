@@ -16,6 +16,7 @@ var node_utils = null
 var script_utils = null
 var scene_utils = null
 var resource_utils = null
+var animation_utils = null
 var _command_handlers = {}
 
 signal client_connected(id: int)
@@ -66,6 +67,10 @@ func _enter_tree() -> void:
 	resource_utils.name = "ResourceUtils"
 	add_child(resource_utils)
 
+	animation_utils = preload("res://addons/godot_mcp_node_control/animation_utils.gd").new()
+	animation_utils.name = "AnimationUtils"
+	add_child(animation_utils)
+
 	# Setup command handlers
 	_command_handlers = {
 		"get_scene_tree": _handle_get_scene_tree,
@@ -112,6 +117,41 @@ func _enter_tree() -> void:
 		"create_new_scene": _handle_create_new_scene,
 		"instantiate_scene": _handle_instantiate_scene,
 		"pack_scene_from_node": _handle_pack_scene_from_node,
+		# Animation System Tools
+		"create_animation_player": _handle_create_animation_player,
+		"get_animation_player_info": _handle_get_animation_player_info,
+		"set_animation_player_property": _handle_set_animation_player_property,
+		"remove_animation_player": _handle_remove_animation_player,
+		"play_animation": _handle_play_animation,
+		"pause_animation": _handle_pause_animation,
+		"stop_animation": _handle_stop_animation,
+		"seek_animation": _handle_seek_animation,
+		"queue_animation": _handle_queue_animation,
+		"clear_animation_queue": _handle_clear_animation_queue,
+		"get_animation_state": _handle_get_animation_state,
+		"set_animation_speed": _handle_set_animation_speed,
+		"create_animation_library": _handle_create_animation_library,
+		"load_animation_library": _handle_load_animation_library,
+		"add_animation_to_library": _handle_add_animation_to_library,
+		"remove_animation_from_library": _handle_remove_animation_from_library,
+		"get_animation_library_list": _handle_get_animation_library_list,
+		"rename_animation": _handle_rename_animation,
+		"create_animation": _handle_create_animation,
+		"get_animation_info": _handle_get_animation_info,
+		"set_animation_property": _handle_set_animation_property,
+		"add_animation_track": _handle_add_animation_track,
+		"remove_animation_track": _handle_remove_animation_track,
+		"insert_keyframe": _handle_insert_keyframe,
+		"remove_keyframe": _handle_remove_keyframe,
+		"get_animation_tracks": _handle_get_animation_tracks,
+		"set_blend_time": _handle_set_blend_time,
+		"get_blend_time": _handle_get_blend_time,
+		"set_animation_next": _handle_set_animation_next,
+		"get_animation_next": _handle_get_animation_next,
+		"set_animation_section": _handle_set_animation_section,
+		"set_animation_section_with_markers": _handle_set_animation_section_with_markers,
+		"add_animation_marker": _handle_add_animation_marker,
+		"remove_animation_marker": _handle_remove_animation_marker,
 	}
 
 	# Connect signals
@@ -817,6 +857,466 @@ func _handle_pack_scene_from_node(params: Dictionary) -> Dictionary:
 	var result = scene_utils.pack_scene_from_node(node_path, save_path)
 	if result.has("error"):
 		_log_error("pack_scene_from_node failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+# Animation System Handlers
+
+func _handle_create_animation_player(params: Dictionary) -> Dictionary:
+	var parent_path = params.get("parent_path", ".")
+	var node_name = params.get("node_name", "")
+
+	var result = animation_utils.create_animation_player(parent_path, node_name)
+	if result.has("error"):
+		_log_error("create_animation_player failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_get_animation_player_info(params: Dictionary) -> Dictionary:
+	var node_path = params.get("node_path", "")
+	if node_path.is_empty():
+		return {"status": "error", "error": "node_path is required"}
+
+	var result = animation_utils.get_animation_player_info(node_path)
+	if result.has("error"):
+		_log_error("get_animation_player_info failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_set_animation_player_property(params: Dictionary) -> Dictionary:
+	var node_path = params.get("node_path", "")
+	var property_name = params.get("property_name", "")
+	var value = params.get("value")
+
+	if node_path.is_empty() or property_name.is_empty():
+		return {"status": "error", "error": "node_path and property_name are required"}
+
+	var result = animation_utils.set_animation_player_property(node_path, property_name, value)
+	if result.has("error"):
+		_log_error("set_animation_player_property failed: %s" % result.error)
+		return result
+	return {"status": "success"}
+
+func _handle_remove_animation_player(params: Dictionary) -> Dictionary:
+	var node_path = params.get("node_path", "")
+	if node_path.is_empty():
+		return {"status": "error", "error": "node_path is required"}
+
+	var result = animation_utils.remove_animation_player(node_path)
+	if result.has("error"):
+		_log_error("remove_animation_player failed: %s" % result.error)
+		return result
+	return {"status": "success"}
+
+func _handle_play_animation(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var custom_blend = params.get("custom_blend", -1)
+	var custom_speed = params.get("custom_speed", 1.0)
+	var from_end = params.get("from_end", false)
+
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.play_animation(player_path, animation_name, custom_blend, custom_speed, from_end)
+	if result.has("error"):
+		_log_error("play_animation failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_pause_animation(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.pause_animation(player_path)
+	if result.has("error"):
+		_log_error("pause_animation failed: %s" % result.error)
+		return result
+	return {"status": "success"}
+
+func _handle_stop_animation(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var keep_state = params.get("keep_state", false)
+
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.stop_animation(player_path, keep_state)
+	if result.has("error"):
+		_log_error("stop_animation failed: %s" % result.error)
+		return result
+	return {"status": "success"}
+
+func _handle_seek_animation(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var seconds = params.get("seconds", 0.0)
+	var update = params.get("update", false)
+	var update_only = params.get("update_only", false)
+
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.seek_animation(player_path, seconds, update, update_only)
+	if result.has("error"):
+		_log_error("seek_animation failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_queue_animation(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+
+	if player_path.is_empty() or animation_name.is_empty():
+		return {"status": "error", "error": "player_path and animation_name are required"}
+
+	var result = animation_utils.queue_animation(player_path, animation_name)
+	if result.has("error"):
+		_log_error("queue_animation failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_clear_animation_queue(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.clear_animation_queue(player_path)
+	if result.has("error"):
+		_log_error("clear_animation_queue failed: %s" % result.error)
+		return result
+	return {"status": "success"}
+
+func _handle_get_animation_state(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.get_animation_state(player_path)
+	if result.has("error"):
+		_log_error("get_animation_state failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_set_animation_speed(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var speed = params.get("speed", 1.0)
+
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.set_animation_speed(player_path, speed)
+	if result.has("error"):
+		_log_error("set_animation_speed failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_create_animation_library(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var library_name = params.get("library_name", "")
+
+	if player_path.is_empty() or library_name.is_empty():
+		return {"status": "error", "error": "player_path and library_name are required"}
+
+	var result = animation_utils.create_animation_library(player_path, library_name)
+	if result.has("error"):
+		_log_error("create_animation_library failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_load_animation_library(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var library_path = params.get("library_path", "")
+	var library_name = params.get("library_name", "")
+
+	if player_path.is_empty() or library_path.is_empty():
+		return {"status": "error", "error": "player_path and library_path are required"}
+
+	var result = animation_utils.load_animation_library(player_path, library_path, library_name)
+	if result.has("error"):
+		_log_error("load_animation_library failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_add_animation_to_library(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var library_name = params.get("library_name", "")
+	var animation_name = params.get("animation_name", "")
+	var animation_data = params.get("animation_data")
+
+	if player_path.is_empty() or library_name.is_empty() or animation_name.is_empty() or animation_data == null:
+		return {"status": "error", "error": "player_path, library_name, animation_name, and animation_data are required"}
+
+	var result = animation_utils.add_animation_to_library(player_path, library_name, animation_name, animation_data)
+	if result.has("error"):
+		_log_error("add_animation_to_library failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_remove_animation_from_library(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var library_name = params.get("library_name", "")
+	var animation_name = params.get("animation_name", "")
+
+	if player_path.is_empty() or library_name.is_empty() or animation_name.is_empty():
+		return {"status": "error", "error": "player_path, library_name, and animation_name are required"}
+
+	var result = animation_utils.remove_animation_from_library(player_path, library_name, animation_name)
+	if result.has("error"):
+		_log_error("remove_animation_from_library failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_get_animation_library_list(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.get_animation_library_list(player_path)
+	if result.has("error"):
+		_log_error("get_animation_library_list failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_rename_animation(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var old_name = params.get("old_name", "")
+	var new_name = params.get("new_name", "")
+
+	if player_path.is_empty() or old_name.is_empty() or new_name.is_empty():
+		return {"status": "error", "error": "player_path, old_name, and new_name are required"}
+
+	var result = animation_utils.rename_animation(player_path, old_name, new_name)
+	if result.has("error"):
+		_log_error("rename_animation failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_create_animation(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var length = params.get("length", 1.0)
+
+	if player_path.is_empty() or animation_name.is_empty():
+		return {"status": "error", "error": "player_path and animation_name are required"}
+
+	var result = animation_utils.create_animation(player_path, animation_name, length)
+	if result.has("error"):
+		_log_error("create_animation failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_get_animation_info(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+
+	if player_path.is_empty() or animation_name.is_empty():
+		return {"status": "error", "error": "player_path and animation_name are required"}
+
+	var result = animation_utils.get_animation_info(player_path, animation_name)
+	if result.has("error"):
+		_log_error("get_animation_info failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_set_animation_property(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var property_name = params.get("property_name", "")
+	var value = params.get("value")
+
+	if player_path.is_empty() or animation_name.is_empty() or property_name.is_empty():
+		return {"status": "error", "error": "player_path, animation_name, and property_name are required"}
+
+	var result = animation_utils.set_animation_property(player_path, animation_name, property_name, value)
+	if result.has("error"):
+		_log_error("set_animation_property failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_add_animation_track(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var track_type = params.get("track_type", 0)
+	var track_path = params.get("track_path", "")
+
+	if player_path.is_empty() or animation_name.is_empty() or track_path.is_empty():
+		return {"status": "error", "error": "player_path, animation_name, and track_path are required"}
+
+	var result = animation_utils.add_animation_track(player_path, animation_name, track_type, track_path)
+	if result.has("error"):
+		_log_error("add_animation_track failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_remove_animation_track(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var track_idx = params.get("track_idx", 0)
+
+	if player_path.is_empty() or animation_name.is_empty():
+		return {"status": "error", "error": "player_path and animation_name are required"}
+
+	var result = animation_utils.remove_animation_track(player_path, animation_name, track_idx)
+	if result.has("error"):
+		_log_error("remove_animation_track failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_insert_keyframe(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var track_idx = params.get("track_idx", 0)
+	var time = params.get("time", 0.0)
+	var value = params.get("value")
+
+	if player_path.is_empty() or animation_name.is_empty():
+		return {"status": "error", "error": "player_path and animation_name are required"}
+
+	var result = animation_utils.insert_keyframe(player_path, animation_name, track_idx, time, value)
+	if result.has("error"):
+		_log_error("insert_keyframe failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_remove_keyframe(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var track_idx = params.get("track_idx", 0)
+	var key_idx = params.get("key_idx", 0)
+
+	if player_path.is_empty() or animation_name.is_empty():
+		return {"status": "error", "error": "player_path and animation_name are required"}
+
+	var result = animation_utils.remove_keyframe(player_path, animation_name, track_idx, key_idx)
+	if result.has("error"):
+		_log_error("remove_keyframe failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_get_animation_tracks(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+
+	if player_path.is_empty() or animation_name.is_empty():
+		return {"status": "error", "error": "player_path and animation_name are required"}
+
+	var result = animation_utils.get_animation_tracks(player_path, animation_name)
+	if result.has("error"):
+		_log_error("get_animation_tracks failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_set_blend_time(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_from = params.get("animation_from", "")
+	var animation_to = params.get("animation_to", "")
+	var blend_time = params.get("blend_time", 0.0)
+
+	if player_path.is_empty() or animation_from.is_empty() or animation_to.is_empty():
+		return {"status": "error", "error": "player_path, animation_from, and animation_to are required"}
+
+	var result = animation_utils.set_blend_time(player_path, animation_from, animation_to, blend_time)
+	if result.has("error"):
+		_log_error("set_blend_time failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_get_blend_time(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_from = params.get("animation_from", "")
+	var animation_to = params.get("animation_to", "")
+
+	if player_path.is_empty() or animation_from.is_empty() or animation_to.is_empty():
+		return {"status": "error", "error": "player_path, animation_from, and animation_to are required"}
+
+	var result = animation_utils.get_blend_time(player_path, animation_from, animation_to)
+	if result.has("error"):
+		_log_error("get_blend_time failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_set_animation_next(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_from = params.get("animation_from", "")
+	var animation_to = params.get("animation_to", "")
+
+	if player_path.is_empty() or animation_from.is_empty() or animation_to.is_empty():
+		return {"status": "error", "error": "player_path, animation_from, and animation_to are required"}
+
+	var result = animation_utils.set_animation_next(player_path, animation_from, animation_to)
+	if result.has("error"):
+		_log_error("set_animation_next failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_get_animation_next(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_from = params.get("animation_from", "")
+
+	if player_path.is_empty() or animation_from.is_empty():
+		return {"status": "error", "error": "player_path and animation_from are required"}
+
+	var result = animation_utils.get_animation_next(player_path, animation_from)
+	if result.has("error"):
+		_log_error("get_animation_next failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_set_animation_section(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var start_time = params.get("start_time", -1)
+	var end_time = params.get("end_time", -1)
+
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.set_animation_section(player_path, start_time, end_time)
+	if result.has("error"):
+		_log_error("set_animation_section failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_set_animation_section_with_markers(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var start_marker = params.get("start_marker", "")
+	var end_marker = params.get("end_marker", "")
+
+	if player_path.is_empty():
+		return {"status": "error", "error": "player_path is required"}
+
+	var result = animation_utils.set_animation_section_with_markers(player_path, start_marker, end_marker)
+	if result.has("error"):
+		_log_error("set_animation_section_with_markers failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_add_animation_marker(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var marker_name = params.get("marker_name", "")
+	var time = params.get("time", 0.0)
+
+	if player_path.is_empty() or animation_name.is_empty() or marker_name.is_empty():
+		return {"status": "error", "error": "player_path, animation_name, and marker_name are required"}
+
+	var result = animation_utils.add_animation_marker(player_path, animation_name, marker_name, time)
+	if result.has("error"):
+		_log_error("add_animation_marker failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_remove_animation_marker(params: Dictionary) -> Dictionary:
+	var player_path = params.get("player_path", "")
+	var animation_name = params.get("animation_name", "")
+	var marker_name = params.get("marker_name", "")
+
+	if player_path.is_empty() or animation_name.is_empty() or marker_name.is_empty():
+		return {"status": "error", "error": "player_path, animation_name, and marker_name are required"}
+
+	var result = animation_utils.remove_animation_marker(player_path, animation_name, marker_name)
+	if result.has("error"):
+		_log_error("remove_animation_marker failed: %s" % result.error)
 		return result
 	return {"status": "success", "data": result}
 

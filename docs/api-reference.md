@@ -2,7 +2,7 @@
 
 ## Tool Categories
 
-This MCP server provides 44 specialized tools organized into logical categories for comprehensive Godot scene manipulation.
+This MCP server provides 42 specialized tools organized into logical categories for comprehensive Godot scene manipulation.
 
 ## 1. Scene Management
 
@@ -538,7 +538,410 @@ Remove the script from a node.
 
 **Returns**: Success confirmation.
 
-## 7. Debugging & Diagnostics
+## 7. Animation System
+
+### `create_animation_player(parent_path: str = ".", node_name: str = "") -> str`
+
+Create an AnimationPlayer node in the Godot scene with full undo support.
+
+**Parameters**:
+- `parent_path` (str): Path to parent node (default: "." for scene root)
+- `node_name` (str): Custom name for the AnimationPlayer (optional - auto-generated if empty)
+
+**Returns**: Success message with the created node's path.
+
+**Examples**:
+```python
+# Create AnimationPlayer for character animations
+await create_animation_player("Player", "CharacterAnimator")
+
+# Create AnimationPlayer for UI transitions
+await create_animation_player("UI/CanvasLayer", "UITransitions")
+```
+
+### `get_animation_player_info(node_path: str) -> str`
+
+Get AnimationPlayer state and properties for debugging and inspection.
+
+**Parameters**:
+- `node_path` (str): Path to the AnimationPlayer node
+
+**Returns**: Detailed AnimationPlayer state information including current animation, playback status, and configuration.
+
+### `set_animation_player_property(node_path: str, property_name: str, value: Any) -> str`
+
+Set AnimationPlayer properties like autoplay, speed, and blend settings.
+
+**Parameters**:
+- `node_path` (str): Path to the AnimationPlayer node
+- `property_name` (str): Property to modify:
+  - `"autoplay"`: Animation to play on scene start (string)
+  - `"speed_scale"`: Playback speed multiplier (float)
+  - `"playback_default_blend_time"`: Default blend duration (float)
+  - `"playback_auto_capture"`: Auto-capture mode (bool)
+- `value` (Any): New value for the property
+
+**Returns**: Success confirmation.
+
+### `remove_animation_player(node_path: str) -> str`
+
+Remove an AnimationPlayer node from the scene.
+
+**Parameters**:
+- `node_path` (str): Path to the AnimationPlayer to remove
+
+**Returns**: Success confirmation.
+
+### `play_animation(player_path: str, animation_name: str = "", custom_blend: float = -1, custom_speed: float = 1.0, from_end: bool = False) -> str`
+
+Play animations with advanced playback controls.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of animation to play (empty for current/default)
+- `custom_blend` (float): Custom blend time in seconds (-1 for default)
+- `custom_speed` (float): Playback speed multiplier (1.0 = normal speed)
+- `from_end` (bool): Start playback from the end (reverse playback)
+
+**Returns**: Success confirmation with playing animation info.
+
+**Examples**:
+```python
+# Play walk animation normally
+await play_animation("Player/Animator", "walk")
+
+# Play jump with 0.5s blend time
+await play_animation("Player/Animator", "jump", custom_blend=0.5)
+
+# Play death animation in reverse
+await play_animation("Player/Animator", "death", from_end=True)
+```
+
+### `pause_animation(player_path: str) -> str`
+
+Pause the currently playing animation.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+
+**Returns**: Success confirmation.
+
+### `stop_animation(player_path: str, keep_state: bool = False) -> str`
+
+Stop animation playback with state preservation option.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `keep_state` (bool): If true, animated properties remain at current values
+
+**Returns**: Success confirmation.
+
+### `seek_animation(player_path: str, seconds: float, update: bool = False, update_only: bool = False) -> str`
+
+Seek to a specific time in the current animation.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `seconds` (float): Time position in seconds to seek to
+- `update` (bool): If true, update animated properties immediately
+- `update_only` (bool): If true, only update properties without changing playback position
+
+**Returns**: Success confirmation with seek position.
+
+### `queue_animation(player_path: str, animation_name: str) -> str`
+
+Add an animation to the playback queue for sequential playing.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of animation to add to queue
+
+**Returns**: Success confirmation.
+
+### `clear_animation_queue(player_path: str) -> str`
+
+Clear all animations from the playback queue.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+
+**Returns**: Success confirmation.
+
+### `get_animation_state(player_path: str) -> str`
+
+Get comprehensive animation playback state information.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+
+**Returns**: Detailed animation state information including current position, speed, queue status.
+
+### `set_animation_speed(player_path: str, speed: float) -> str`
+
+Set the playback speed multiplier for animations.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `speed` (float): Speed multiplier (1.0 = normal, 2.0 = double speed, 0.5 = half speed)
+
+**Returns**: Success confirmation with speed setting.
+
+### `create_animation_library(player_path: str, library_name: str) -> str`
+
+Create a new AnimationLibrary for organizing animations.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `library_name` (str): Name for the new animation library
+
+**Returns**: Success confirmation.
+
+### `load_animation_library(player_path: str, library_path: str, library_name: str = "") -> str`
+
+Load an AnimationLibrary from a file.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `library_path` (str): Path to the animation library file (.res)
+- `library_name` (str): Name to assign to the loaded library (optional)
+
+**Returns**: Success confirmation.
+
+### `add_animation_to_library(player_path: str, library_name: str, animation_name: str, animation: Any) -> str`
+
+Add an animation to an existing library.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `library_name` (str): Name of the target animation library
+- `animation_name` (str): Name for the animation in the library
+- `animation` (Any): Animation resource to add
+
+**Returns**: Success confirmation.
+
+### `remove_animation_from_library(player_path: str, library_name: str, animation_name: str) -> str`
+
+Remove an animation from an animation library.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `library_name` (str): Name of the animation library
+- `animation_name` (str): Name of animation to remove
+
+**Returns**: Success confirmation.
+
+### `get_animation_library_list(player_path: str) -> str`
+
+Get a list of all animations in all libraries.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+
+**Returns**: Dictionary of libraries with their animations.
+
+### `rename_animation(player_path: str, old_name: str, new_name: str) -> str`
+
+Rename an animation in an AnimationPlayer.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `old_name` (str): Current name of the animation
+- `new_name` (str): New name for the animation
+
+**Returns**: Success confirmation.
+
+### `create_animation(player_path: str, animation_name: str, length: float = 1.0) -> str`
+
+Create a new empty animation resource.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name for the new animation
+- `length` (float): Duration of the animation in seconds
+
+**Returns**: Success confirmation with animation details.
+
+### `get_animation_info(player_path: str, animation_name: str) -> str`
+
+Get detailed information about a specific animation.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to inspect
+
+**Returns**: Animation metadata including duration, loop mode, track count.
+
+### `set_animation_property(player_path: str, animation_name: str, property_name: str, value: Any) -> str`
+
+Set properties of an animation like length, loop mode, and step size.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to modify
+- `property_name` (str): Property to change:
+  - `"length"`: Animation duration in seconds (float)
+  - `"loop_mode"`: Looping behavior (0=Linear, 1=Clamp, 2=PingPong)
+  - `"step"`: Keyframe step size for snapping (float)
+- `value` (Any): New value for the property
+
+**Returns**: Success confirmation.
+
+### `add_animation_track(player_path: str, animation_name: str, track_type: int, track_path: str) -> str`
+
+Add a new track to an animation for keyframe data.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to modify
+- `track_type` (int): Type of track to create:
+  - `0`: POSITION_3D (Vector3 position)
+  - `1`: ROTATION_3D (Quaternion rotation)
+  - `2`: SCALE_3D (Vector3 scale)
+  - `3`: BLEND_SHAPE (float blend shape weight)
+  - `4`: PROPERTY (generic property animation)
+  - `5`: POSITION_2D (Vector2 position)
+  - `6`: ROTATION_2D (float rotation)
+  - `7`: SCALE_2D (Vector2 scale)
+- `track_path` (str): Node path for the track (e.g., "Sprite:position", ".:rotation")
+
+**Returns**: Success confirmation with track index.
+
+### `remove_animation_track(player_path: str, animation_name: str, track_idx: int) -> str`
+
+Remove a track from an animation.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to modify
+- `track_idx` (int): Index of the track to remove
+
+**Returns**: Success confirmation.
+
+### `insert_keyframe(player_path: str, animation_name: str, track_idx: int, time: float, value: Any) -> str`
+
+Insert a keyframe at a specific time in an animation track.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to modify
+- `track_idx` (int): Index of the track to add keyframe to
+- `time` (float): Time position in seconds for the keyframe
+- `value` (Any): Value for the keyframe (type depends on track type)
+
+**Returns**: Success confirmation with keyframe index.
+
+### `remove_keyframe(player_path: str, animation_name: str, track_idx: int, key_idx: int) -> str`
+
+Remove a keyframe from an animation track.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to modify
+- `track_idx` (int): Index of the track containing the keyframe
+- `key_idx` (int): Index of the keyframe to remove
+
+**Returns**: Success confirmation.
+
+### `get_animation_tracks(player_path: str, animation_name: str) -> str`
+
+Get detailed information about all tracks in an animation.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to inspect
+
+**Returns**: Array of track information objects.
+
+### `set_blend_time(player_path: str, animation_from: str, animation_to: str, blend_time: float) -> str`
+
+Set blend time between two animations for smooth transitions.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_from` (str): Name of the source animation
+- `animation_to` (str): Name of the target animation
+- `blend_time` (float): Blend duration in seconds
+
+**Returns**: Success confirmation.
+
+### `get_blend_time(player_path: str, animation_from: str, animation_to: str) -> str`
+
+Get the blend time between two animations.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_from` (str): Name of the source animation
+- `animation_to` (str): Name of the target animation
+
+**Returns**: Blend time in seconds.
+
+### `set_animation_next(player_path: str, animation_from: str, animation_to: str) -> str`
+
+Set the next animation to play automatically after another.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_from` (str): Name of the animation that triggers the next
+- `animation_to` (str): Name of the animation to play next
+
+**Returns**: Success confirmation.
+
+### `get_animation_next(player_path: str, animation_from: str) -> str`
+
+Get the next animation queued to play after another.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_from` (str): Name of the animation to check
+
+**Returns**: Name of the next animation or empty string.
+
+### `set_animation_section(player_path: str, start_time: float = -1, end_time: float = -1) -> str`
+
+Set the playback section for the current animation.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `start_time` (float): Start time in seconds (-1 for animation start)
+- `end_time` (float): End time in seconds (-1 for animation end)
+
+**Returns**: Success confirmation.
+
+### `set_animation_section_with_markers(player_path: str, start_marker: str = "", end_marker: str = "") -> str`
+
+Set playback section using named markers in the animation.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `start_marker` (str): Name of the start marker (empty for animation start)
+- `end_marker` (str): Name of the end marker (empty for animation end)
+
+**Returns**: Success confirmation.
+
+### `add_animation_marker(player_path: str, animation_name: str, marker_name: str, time: float) -> str`
+
+Add a named marker to an animation at a specific time.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to modify
+- `marker_name` (str): Name for the marker
+- `time` (float): Time position in seconds for the marker
+
+**Returns**: Success confirmation.
+
+### `remove_animation_marker(player_path: str, animation_name: str, marker_name: str) -> str`
+
+Remove a named marker from an animation.
+
+**Parameters**:
+- `player_path` (str): Path to the AnimationPlayer node
+- `animation_name` (str): Name of the animation to modify
+- `marker_name` (str): Name of the marker to remove
+
+**Returns**: Success confirmation.
+
+## 8. Debugging & Diagnostics
 
 ### `get_debug_info() -> str`
 

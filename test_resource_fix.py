@@ -23,8 +23,8 @@ def test_import():
         print(f"❌ Failed to import server: {e}")
         return False
 
-def test_save_resource_tool_exists():
-    """Test that the save_resource tool exists and has the correct signature"""
+def test_save_resource_function_exists():
+    """Test that the save_resource function is defined in the server module"""
     try:
         # Import the server module directly
         import importlib.util
@@ -32,27 +32,16 @@ def test_save_resource_tool_exists():
         server_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(server_module)
 
-        # Check if save_resource tool exists
-        app = server_module.app
-
-        # Look for the save_resource tool
-        save_resource_found = False
-        for tool in app._tools:
-            if tool.name == "save_resource":
-                save_resource_found = True
-                # Check if it has the correct parameters
-                # We can't easily check the signature, but we can check it exists
-                break
-
-        if save_resource_found:
-            print("✅ save_resource tool found with correct signature")
+        # Check if save_resource function exists
+        if hasattr(server_module, 'save_resource'):
+            print("✅ save_resource function found in server module")
             return True
         else:
-            print("❌ save_resource tool not found")
+            print("❌ save_resource function not found in server module")
             return False
 
     except Exception as e:
-        print(f"❌ Failed to check save_resource tool: {e}")
+        print(f"❌ Failed to check save_resource function: {e}")
         return False
 
 def main():

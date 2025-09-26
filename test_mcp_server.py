@@ -150,6 +150,66 @@ async def test_scripting_operations(client):
     assert "📝 Successfully attached GDScript to Player" in result["data"]["message"]
     print(f"add_script_to_node: PASS")
 
+async def test_animation_operations(client):
+    """Tests for animation-related tools."""
+    print("\n--- Testing Animation Operations ---")
+
+    # Test create_animation_player
+    server_module.godot.set_mock_response("create_animation_player", {"status": "success", "data": {"node_path": "./AnimationPlayer", "node_name": "AnimationPlayer"}})
+    result = await get_tool_result(client, "create_animation_player", {"parent_path": ".", "node_name": "AnimationPlayer"})
+    assert result["status"] == "success"
+    assert "🎬 Created AnimationPlayer 'AnimationPlayer' at path: ./AnimationPlayer" in result["data"]["message"]
+    print(f"create_animation_player: PASS")
+
+    # Test get_animation_player_info
+    server_module.godot.set_mock_response("get_animation_player_info", {"status": "success", "data": {"current_animation": "idle", "is_playing": True}})
+    result = await get_tool_result(client, "get_animation_player_info", {"node_path": "AnimationPlayer"})
+    assert result["status"] == "success"
+    assert result["data"]["current_animation"] == "idle"
+    print(f"get_animation_player_info: PASS")
+
+    # Test play_animation
+    server_module.godot.set_mock_response("play_animation", {"status": "success", "data": {"playing": "walk"}})
+    result = await get_tool_result(client, "play_animation", {"player_path": "AnimationPlayer", "animation_name": "walk"})
+    assert result["status"] == "success"
+    assert "▶️ Playing animation 'walk'" in result["data"]["message"]
+    print(f"play_animation: PASS")
+
+    # Test pause_animation
+    server_module.godot.set_mock_response("pause_animation", {"status": "success"})
+    result = await get_tool_result(client, "pause_animation", {"player_path": "AnimationPlayer"})
+    assert result["status"] == "success"
+    assert "⏸️ Paused animation on AnimationPlayer" in result["data"]["message"]
+    print(f"pause_animation: PASS")
+
+    # Test create_animation
+    server_module.godot.set_mock_response("create_animation", {"status": "success", "data": {"message": "Created animation"}})
+    result = await get_tool_result(client, "create_animation", {"player_path": "AnimationPlayer", "animation_name": "jump", "length": 1.0})
+    assert result["status"] == "success"
+    assert "🎬 Created animation 'jump' (1.0s) on AnimationPlayer" in result["data"]["message"]
+    print(f"create_animation: PASS")
+
+    # Test add_animation_track
+    server_module.godot.set_mock_response("add_animation_track", {"status": "success", "data": {"track_index": 0}})
+    result = await get_tool_result(client, "add_animation_track", {"player_path": "AnimationPlayer", "animation_name": "jump", "track_type": 5, "track_path": "Sprite:position"})
+    assert result["status"] == "success"
+    assert "➕ Added 5 track 'Sprite:position' to animation 'jump'" in result["data"]["message"]
+    print(f"add_animation_track: PASS")
+
+    # Test insert_keyframe
+    server_module.godot.set_mock_response("insert_keyframe", {"status": "success", "data": {"key_index": 0}})
+    result = await get_tool_result(client, "insert_keyframe", {"player_path": "AnimationPlayer", "animation_name": "jump", "track_idx": 0, "time": 0.5, "value": [100, 200]})
+    assert result["status"] == "success"
+    assert "🔑 Inserted keyframe at 0.5s in track 0 of 'jump'" in result["data"]["message"]
+    print(f"insert_keyframe: PASS")
+
+    # Test set_blend_time
+    server_module.godot.set_mock_response("set_blend_time", {"status": "success", "data": {"blend_time": 0.5}})
+    result = await get_tool_result(client, "set_blend_time", {"player_path": "AnimationPlayer", "animation_from": "walk", "animation_to": "run", "blend_time": 0.5})
+    assert result["status"] == "success"
+    assert "🔄 Set blend time 0.5s between 'walk' → 'run'" in result["data"]["message"]
+    print(f"set_blend_time: PASS")
+
 async def test_all_tools():
     """Run tests for all tools."""
     from fastmcp import Client
@@ -158,6 +218,7 @@ async def test_all_tools():
         await test_resource_operations(client)
         await test_scene_operations(client)
         await test_scripting_operations(client)
+        await test_animation_operations(client)
 
 async def main():
     """Run all tests"""

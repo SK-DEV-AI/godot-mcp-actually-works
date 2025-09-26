@@ -54,7 +54,7 @@ Deep integration with Godot 4.5's editor API, providing undo/redo support, real-
 
 ## 🛠️ Available Tools
 
-The MCP server provides **26 specialized tools** organized into categories:
+The MCP server provides **42 specialized tools** organized into categories:
 
 ### Scene Management
 - `get_scene_tree()` - Complete scene hierarchy inspection
@@ -93,6 +93,42 @@ The MCP server provides **26 specialized tools** organized into categories:
 - `get_script_functions()` - List script methods
 - `attach_script_to_node()` - Link script files to nodes
 - `detach_script_from_node()` - Remove scripts from nodes
+
+### Animation System (16 tools)
+- `create_animation_player()` - Create AnimationPlayer nodes
+- `get_animation_player_info()` - Get player state and properties
+- `set_animation_player_property()` - Configure player settings
+- `remove_animation_player()` - Delete animation players
+- `play_animation()` - Start animation playback with controls
+- `pause_animation()` - Pause current animation
+- `stop_animation()` - Stop animation with state preservation
+- `seek_animation()` - Jump to specific time in animation
+- `queue_animation()` - Add animations to playback queue
+- `clear_animation_queue()` - Remove queued animations
+- `get_animation_state()` - Get real-time playback information
+- `set_animation_speed()` - Control playback speed
+- `create_animation_library()` - Organize animations in libraries
+- `load_animation_library()` - Import animation libraries
+- `add_animation_to_library()` - Add animations to libraries
+- `remove_animation_from_library()` - Remove animations from libraries
+- `get_animation_library_list()` - List all animations in libraries
+- `rename_animation()` - Rename animations
+- `create_animation()` - Create new animation resources
+- `get_animation_info()` - Get animation metadata
+- `set_animation_property()` - Configure animation properties
+- `add_animation_track()` - Add tracks to animations
+- `remove_animation_track()` - Remove tracks from animations
+- `insert_keyframe()` - Add keyframes to tracks
+- `remove_keyframe()` - Remove keyframes from tracks
+- `get_animation_tracks()` - Get track information
+- `set_blend_time()` - Set transition blend times
+- `get_blend_time()` - Get blend time settings
+- `set_animation_next()` - Chain animations automatically
+- `get_animation_next()` - Get animation chain information
+- `set_animation_section()` - Play animation subsections
+- `set_animation_section_with_markers()` - Use markers for sections
+- `add_animation_marker()` - Add named markers to animations
+- `remove_animation_marker()` - Remove animation markers
 
 ### Resource Management
 - `create_resource()` - Create Godot resources (Texture, AudioStream, etc.)

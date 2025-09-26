@@ -50,9 +50,7 @@ func open_scene(scene_path: String) -> Dictionary:
 	if not scene_path.ends_with(".tscn"):
 		return {"error": "Invalid scene file extension. Must be .tscn"}
 
-	var err = editor_interface.open_scene_from_path(scene_path)
-	if err != OK:
-		return {"error": "Failed to open scene: %s" % error_string(err)}
+	editor_interface.open_scene_from_path(scene_path)
 
 	return {"success": true, "scene_path": scene_path}
 
@@ -134,16 +132,12 @@ func create_new_scene(root_node_type: String = "Node2D") -> Dictionary:
 		return {"error": "Failed to save temporary scene: %s" % error_string(save_err)}
 
 	# 4. Open the temporary scene in the editor
-	var open_err = editor_interface.open_scene_from_path(temp_scene_path)
+	editor_interface.open_scene_from_path(temp_scene_path)
 
 	# 5. Clean up the temporary file
 	var dir_access = DirAccess.open("res://")
 	if dir_access:
 		dir_access.remove(temp_scene_path)
-
-	if open_err != OK:
-		root_node.free() # Clean up
-		return {"error": "Failed to open temporary scene: %s" % error_string(open_err)}
 
 	# After opening, the editor's scene root is the new node.
 	# We need to clear its scene_file_path to make it an "unsaved" scene.

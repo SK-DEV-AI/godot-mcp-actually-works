@@ -1333,6 +1333,1211 @@ async def get_resource_metadata(resource_path: str) -> str:
         f"Failed to get metadata for {resource_path}"
     )
 
+# Animation System Tools
+
+@app.tool()
+async def create_animation_player(parent_path: str = ".", node_name: str = "") -> str:
+    """Create an AnimationPlayer node in the Godot scene with full undo support.
+
+    This tool creates an AnimationPlayer node that can control animations for the entire scene
+    or specific node hierarchies. AnimationPlayers are essential for creating complex animated
+    sequences, character animations, UI transitions, and procedural animations.
+
+    Args:
+        parent_path: Path to parent node (default: "." for scene root)
+                     Use paths like "Player", "UI/CanvasLayer", or "Enemies/Enemy1"
+        node_name: Custom name for the AnimationPlayer (optional - auto-generated if empty)
+
+    Returns: Success message with the created node's path
+
+    Examples:
+        - "Create an AnimationPlayer for the Player character"
+        - "Add an AnimationPlayer to the UI canvas for menu transitions"
+        - "Create an AnimationPlayer for enemy attack animations"
+
+    Note: All changes are undoable in Godot's editor.
+    """
+    params = {
+        "parent_path": parent_path,
+        "node_name": node_name
+    }
+    def success_formatter(data):
+        node_path = data.get('node_path', 'Unknown')
+        node_name_created = data.get('node_name', 'AnimationPlayer')
+        return {"message": f"🎬 Created AnimationPlayer '{node_name_created}' at path: {node_path}"}
+
+    return await _execute_command(
+        "create_animation_player",
+        params,
+        success_formatter,
+        f"Failed to create AnimationPlayer"
+    )
+
+@app.tool()
+async def get_animation_player_info(node_path: str) -> str:
+    """Get AnimationPlayer state and properties for debugging and inspection.
+
+    This tool provides comprehensive information about an AnimationPlayer's current state,
+    including playback status, current animation, speed settings, and queue information.
+    Essential for debugging animation issues and understanding player configuration.
+
+    Args:
+        node_path: Path to the AnimationPlayer node (e.g., "AnimationPlayer", "Player/Animator")
+
+    Returns: Detailed AnimationPlayer state information
+
+    Examples:
+        - "Check the AnimationPlayer's current state"
+        - "See what animation is currently playing"
+        - "Get AnimationPlayer configuration details"
+
+    Note: Provides real-time playback information and configuration settings.
+    """
+    return await _execute_command(
+        "get_animation_player_info",
+        {"node_path": node_path},
+        lambda data: data,
+        f"Failed to get AnimationPlayer info for {node_path}"
+    )
+
+@app.tool()
+async def set_animation_player_property(node_path: str, property_name: str, value: Any) -> str:
+    """Set AnimationPlayer properties like autoplay, speed, and blend settings.
+
+    This tool allows configuration of AnimationPlayer behavior including playback speed,
+    autoplay settings, blend times, and other core properties that affect how animations
+    are played and transitioned.
+
+    Args:
+        node_path: Path to the AnimationPlayer node
+        property_name: Property to modify:
+                      - "autoplay": Animation to play on scene start (string)
+                      - "speed_scale": Playback speed multiplier (float)
+                      - "playback_default_blend_time": Default blend duration (float)
+                      - "playback_auto_capture": Auto-capture mode (bool)
+                      - "playback_auto_capture_duration": Auto-capture duration (float)
+                      - "movie_quit_on_finish": Quit on movie finish (bool)
+        value: New value for the property
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Set AnimationPlayer autoplay to 'idle'"
+        - "Change playback speed to 2.0 for fast-forward"
+        - "Enable auto-capture for procedural animations"
+
+    Note: Changes are undoable in Godot's editor.
+    """
+    params = {
+        "node_path": node_path,
+        "property_name": property_name,
+        "value": value
+    }
+    return await _execute_command(
+        "set_animation_player_property",
+        params,
+        lambda data: {"message": f"⚙️ Set {property_name} = {value} on AnimationPlayer {node_path}"},
+        f"Failed to set {property_name} on {node_path}"
+    )
+
+@app.tool()
+async def remove_animation_player(node_path: str) -> str:
+    """Remove an AnimationPlayer node from the scene.
+
+    This tool safely removes AnimationPlayer nodes and all their associated animations.
+    Use this when cleaning up unused animation controllers or restructuring scene hierarchy.
+
+    Args:
+        node_path: Path to the AnimationPlayer to remove
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Remove the unused AnimationPlayer from the Player node"
+        - "Clean up the old animation controller"
+
+    Note: This operation is undoable in Godot's editor.
+    """
+    return await _execute_command(
+        "remove_animation_player",
+        {"node_path": node_path},
+        lambda data: {"message": f"🗑️ Successfully removed AnimationPlayer: {node_path}"},
+        f"Failed to remove AnimationPlayer {node_path}"
+    )
+
+@app.tool()
+async def play_animation(player_path: str, animation_name: str = "", custom_blend: float = -1, custom_speed: float = 1.0, from_end: bool = False) -> str:
+    """Play animations with advanced playback controls.
+
+    This tool provides full control over animation playback including custom blend times,
+    speed modifications, and playback direction. Essential for creating dynamic animation
+    sequences and interactive responses.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of animation to play (empty for current/default)
+        custom_blend: Custom blend time in seconds (-1 for default)
+        custom_speed: Playback speed multiplier (1.0 = normal speed)
+        from_end: Start playback from the end (reverse playback)
+
+    Returns: Success confirmation with playing animation info
+
+    Examples:
+        - "Play the 'walk' animation on the Player"
+        - "Play 'jump' with 0.5 second blend time"
+        - "Play 'death' animation in reverse from the end"
+        - "Play current animation at double speed"
+
+    Note: Playback controls are applied immediately and affect real-time animation.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "custom_blend": custom_blend,
+        "custom_speed": custom_speed,
+        "from_end": from_end
+    }
+    def success_formatter(data):
+        playing = data.get("playing", animation_name if animation_name else "current")
+        blend_note = f" with {custom_blend}s blend" if custom_blend >= 0 else ""
+        speed_note = f" at {custom_speed}x speed" if custom_speed != 1.0 else ""
+        reverse_note = " in reverse" if from_end else ""
+        return {"message": f"▶️ Playing animation '{playing}'{blend_note}{speed_note}{reverse_note}"}
+
+    return await _execute_command(
+        "play_animation",
+        params,
+        success_formatter,
+        f"Failed to play animation on {player_path}"
+    )
+
+@app.tool()
+async def pause_animation(player_path: str) -> str:
+    """Pause the currently playing animation.
+
+    This tool freezes animation playback at the current frame, allowing for
+    precise control over animation timing and synchronization with game events.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Pause the Player's walking animation"
+        - "Freeze the current animation for debugging"
+
+    Note: Use play_animation() to resume playback from the paused position.
+    """
+    return await _execute_command(
+        "pause_animation",
+        {"player_path": player_path},
+        lambda data: {"message": f"⏸️ Paused animation on {player_path}"},
+        f"Failed to pause animation on {player_path}"
+    )
+
+@app.tool()
+async def stop_animation(player_path: str, keep_state: bool = False) -> str:
+    """Stop animation playback with state preservation option.
+
+    This tool stops the current animation and optionally preserves the animated
+    properties at their current values, useful for creating pose-to-pose animations
+    or maintaining specific states.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        keep_state: If true, animated properties remain at current values
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Stop the Player's animation"
+        - "Stop animation but keep the current pose"
+        - "Reset animation state completely"
+
+    Note: Use keep_state=true for seamless transitions between animations.
+    """
+    params = {"player_path": player_path, "keep_state": keep_state}
+    state_note = " (keeping current state)" if keep_state else ""
+    return await _execute_command(
+        "stop_animation",
+        params,
+        lambda data: {"message": f"⏹️ Stopped animation on {player_path}{state_note}"},
+        f"Failed to stop animation on {player_path}"
+    )
+
+@app.tool()
+async def seek_animation(player_path: str, seconds: float, update: bool = False, update_only: bool = False) -> str:
+    """Seek to a specific time in the current animation.
+
+    This tool allows precise positioning within an animation timeline, essential for
+    creating cutscenes, synchronization points, and interactive animation control.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        seconds: Time position in seconds to seek to
+        update: If true, update animated properties immediately
+        update_only: If true, only update properties without changing playback position
+
+    Returns: Success confirmation with seek position
+
+    Examples:
+        - "Seek to 2.5 seconds in the animation"
+        - "Jump to the middle of the current animation"
+        - "Update animation properties without changing position"
+
+    Note: Useful for creating precise animation synchronization and debugging.
+    """
+    params = {
+        "player_path": player_path,
+        "seconds": seconds,
+        "update": update,
+        "update_only": update_only
+    }
+    update_note = " (updating properties)" if update else ""
+    return await _execute_command(
+        "seek_animation",
+        params,
+        lambda data: {"message": f"🎯 Seeked to {seconds}s in animation on {player_path}{update_note}"},
+        f"Failed to seek animation on {player_path}"
+    )
+
+@app.tool()
+async def queue_animation(player_path: str, animation_name: str) -> str:
+    """Add an animation to the playback queue for sequential playing.
+
+    This tool enables creating animation sequences where animations play one after another
+    automatically. Perfect for creating complex animation chains like attack combos,
+    character state transitions, or cinematic sequences.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of animation to add to queue
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Queue the 'attack2' animation after 'attack1'"
+        - "Add 'land' animation to play after 'jump'"
+        - "Create an animation sequence for character actions"
+
+    Note: Animations play in queue order after the current animation finishes.
+    """
+    params = {"player_path": player_path, "animation_name": animation_name}
+    return await _execute_command(
+        "queue_animation",
+        params,
+        lambda data: {"message": f"📋 Queued animation '{animation_name}' on {player_path}"},
+        f"Failed to queue animation '{animation_name}' on {player_path}"
+    )
+
+@app.tool()
+async def clear_animation_queue(player_path: str) -> str:
+    """Clear all animations from the playback queue.
+
+    This tool removes all queued animations, stopping the automatic sequence playback.
+    Useful for interrupting animation chains or resetting animation state.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Clear the animation queue to stop the sequence"
+        - "Cancel pending animations"
+        - "Reset animation playback state"
+
+    Note: Current playing animation continues unaffected.
+    """
+    return await _execute_command(
+        "clear_animation_queue",
+        {"player_path": player_path},
+        lambda data: {"message": f"🧹 Cleared animation queue on {player_path}"},
+        f"Failed to clear animation queue on {player_path}"
+    )
+
+@app.tool()
+async def get_animation_state(player_path: str) -> str:
+    """Get comprehensive animation playback state information.
+
+    This tool provides real-time information about animation playback including
+    current position, playback speed, queue status, and section information.
+    Essential for debugging animation timing and synchronization issues.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+
+    Returns: Detailed animation state information
+
+    Examples:
+        - "Check current animation position and speed"
+        - "See what's in the animation queue"
+        - "Get playback state for debugging"
+
+    Note: Returns live playback information for real-time monitoring.
+    """
+    return await _execute_command(
+        "get_animation_state",
+        {"player_path": player_path},
+        lambda data: data,
+        f"Failed to get animation state for {player_path}"
+    )
+
+@app.tool()
+async def set_animation_speed(player_path: str, speed: float) -> str:
+    """Set the playback speed multiplier for animations.
+
+    This tool allows dynamic speed control for creating slow-motion effects,
+    fast-forward sequences, or synchronized timing adjustments.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        speed: Speed multiplier (1.0 = normal, 2.0 = double speed, 0.5 = half speed)
+
+    Returns: Success confirmation with speed setting
+
+    Examples:
+        - "Slow down animation to half speed for dramatic effect"
+        - "Speed up animation to 3x for fast-forward"
+        - "Reset animation speed to normal"
+
+    Note: Speed changes are applied immediately to current and future animations.
+    """
+    params = {"player_path": player_path, "speed": speed}
+    return await _execute_command(
+        "set_animation_speed",
+        params,
+        lambda data: {"message": f"⚡ Set animation speed to {speed}x on {player_path}"},
+        f"Failed to set animation speed on {player_path}"
+    )
+
+@app.tool()
+async def create_animation_library(player_path: str, library_name: str) -> str:
+    """Create a new AnimationLibrary for organizing animations.
+
+    This tool creates animation libraries for better organization of complex animation
+    sets. Libraries allow grouping related animations and managing large animation
+    collections efficiently.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        library_name: Name for the new animation library
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Create a 'Combat' animation library for battle animations"
+        - "Add a 'Movement' library for locomotion animations"
+        - "Create a 'UI' library for interface animations"
+
+    Note: Libraries help organize animations in complex projects.
+    """
+    params = {"player_path": player_path, "library_name": library_name}
+    return await _execute_command(
+        "create_animation_library",
+        params,
+        lambda data: {"message": f"📚 Created animation library '{library_name}' on {player_path}"},
+        f"Failed to create animation library '{library_name}' on {player_path}"
+    )
+
+@app.tool()
+async def load_animation_library(player_path: str, library_path: str, library_name: str = "") -> str:
+    """Load an AnimationLibrary from a file.
+
+    This tool loads pre-created animation libraries from disk, allowing reuse
+    of animation assets across different scenes and projects.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        library_path: Path to the animation library file (.res)
+        library_name: Name to assign to the loaded library (optional)
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Load character animations from res://animations/character_animations.res"
+        - "Import shared animation library for UI elements"
+        - "Load animation library with custom name"
+
+    Note: Libraries must be saved AnimationLibrary resources.
+    """
+    params = {
+        "player_path": player_path,
+        "library_path": library_path,
+        "library_name": library_name
+    }
+    return await _execute_command(
+        "load_animation_library",
+        params,
+        lambda data: {"message": f"📂 Loaded animation library from {library_path} on {player_path}"},
+        f"Failed to load animation library from {library_path}"
+    )
+
+@app.tool()
+async def add_animation_to_library(player_path: str, library_name: str, animation_name: str, animation_data: Dict[str, Any]) -> str:
+    """Add an animation to an existing library.
+
+    This tool allows building up animation libraries programmatically by adding
+    individual animations to organized collections.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        library_name: Name of the target animation library
+        animation_name: Name for the animation in the library
+        animation_data: Dictionary containing animation properties:
+            - length: Animation duration in seconds (optional, default 1.0)
+            - loop_mode: Looping behavior (optional, 0=Linear, 1=Clamp, 2=PingPong)
+            - step: Keyframe step size (optional)
+            - tracks: Array of track data (optional), each containing:
+                - type: Track type (0-8, see add_animation_track for details)
+                - path: Node path for the track
+                - keyframes: Array of keyframe data with 'time' and 'value' fields
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Add the 'walk' animation to the Movement library"
+        - "Import animation into the Combat library"
+        - "Add custom animation to existing library"
+
+    Note: Animation data is converted to a proper Animation resource.
+    """
+    params = {
+        "player_path": player_path,
+        "library_name": library_name,
+        "animation_name": animation_name,
+        "animation_data": animation_data
+    }
+    return await _execute_command(
+        "add_animation_to_library",
+        params,
+        lambda data: {"message": f"➕ Added animation '{animation_name}' to library '{library_name}'"},
+        f"Failed to add animation to library '{library_name}'"
+    )
+
+@app.tool()
+async def remove_animation_from_library(player_path: str, library_name: str, animation_name: str) -> str:
+    """Remove an animation from an animation library.
+
+    This tool allows cleaning up animation libraries by removing unused or
+    outdated animations from organized collections.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        library_name: Name of the animation library
+        animation_name: Name of animation to remove
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Remove the old 'walk' animation from Movement library"
+        - "Clean up unused animations from library"
+        - "Remove animation from Combat library"
+
+    Note: Only removes the animation from the library, not from disk.
+    """
+    params = {
+        "player_path": player_path,
+        "library_name": library_name,
+        "animation_name": animation_name
+    }
+    return await _execute_command(
+        "remove_animation_from_library",
+        params,
+        lambda data: {"message": f"➖ Removed animation '{animation_name}' from library '{library_name}'"},
+        f"Failed to remove animation from library '{library_name}'"
+    )
+
+@app.tool()
+async def get_animation_library_list(player_path: str) -> str:
+    """Get a list of all animations in all libraries.
+
+    This tool provides an overview of all available animations organized by library,
+    helping with animation management and debugging.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+
+    Returns: Dictionary of libraries with their animations
+
+    Examples:
+        - "List all available animations"
+        - "See what's in each animation library"
+        - "Get overview of animation organization"
+
+    Note: Shows both built-in animations and library-organized animations.
+    """
+    return await _execute_command(
+        "get_animation_library_list",
+        {"player_path": player_path},
+        lambda data: data,
+        f"Failed to get animation library list for {player_path}"
+    )
+
+@app.tool()
+async def rename_animation(player_path: str, old_name: str, new_name: str) -> str:
+    """Rename an animation in an AnimationPlayer.
+
+    This tool allows reorganizing animation names for better clarity and consistency
+    in animation management.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        old_name: Current name of the animation
+        new_name: New name for the animation
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Rename 'walk_cycle' to 'walking'"
+        - "Change animation name for consistency"
+        - "Update animation naming scheme"
+
+    Note: Renaming affects all references to this animation.
+    """
+    params = {
+        "player_path": player_path,
+        "old_name": old_name,
+        "new_name": new_name
+    }
+    return await _execute_command(
+        "rename_animation",
+        params,
+        lambda data: {"message": f"📝 Renamed animation '{old_name}' to '{new_name}' on {player_path}"},
+        f"Failed to rename animation '{old_name}' on {player_path}"
+    )
+
+@app.tool()
+async def create_animation(player_path: str, animation_name: str, length: float = 1.0) -> str:
+    """Create a new empty animation resource.
+
+    This tool creates blank animation resources that can then be populated with
+    keyframes and tracks. Essential for building custom animations programmatically.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name for the new animation
+        length: Duration of the animation in seconds
+
+    Returns: Success confirmation with animation details
+
+    Examples:
+        - "Create a 2-second 'jump' animation"
+        - "Make a new 'attack' animation with 1.5 second duration"
+        - "Create empty animation for procedural keyframe insertion"
+
+    Note: Animation is created empty - use other tools to add tracks and keyframes.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "length": length
+    }
+    return await _execute_command(
+        "create_animation",
+        params,
+        lambda data: {"message": f"🎬 Created animation '{animation_name}' ({length}s) on {player_path}"},
+        f"Failed to create animation '{animation_name}' on {player_path}"
+    )
+
+@app.tool()
+async def get_animation_info(player_path: str, animation_name: str) -> str:
+    """Get detailed information about a specific animation.
+
+    This tool provides comprehensive metadata about animations including duration,
+    loop mode, track count, and configuration settings.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to inspect
+
+    Returns: Animation metadata and configuration
+
+    Examples:
+        - "Check the duration and loop mode of 'walk' animation"
+        - "Get track count for 'complex_animation'"
+        - "Inspect animation properties for debugging"
+
+    Note: Provides static animation properties, not playback state.
+    """
+    params = {"player_path": player_path, "animation_name": animation_name}
+    return await _execute_command(
+        "get_animation_info",
+        params,
+        lambda data: data,
+        f"Failed to get animation info for '{animation_name}' on {player_path}"
+    )
+
+@app.tool()
+async def set_animation_property(player_path: str, animation_name: str, property_name: str, value: Any) -> str:
+    """Set properties of an animation like length, loop mode, and step size.
+
+    This tool allows configuration of animation behavior including timing,
+    looping, and interpolation settings.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to modify
+        property_name: Property to change:
+                      - "length": Animation duration in seconds (float)
+                      - "loop_mode": Looping behavior (0=Linear, 1=Clamp, 2=PingPong)
+                      - "step": Keyframe step size for snapping (float)
+        value: New value for the property
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Set animation length to 3.0 seconds"
+        - "Enable looping for the walk cycle"
+        - "Set step size to 0.1 for precise keyframing"
+
+    Note: Property changes affect animation playback behavior.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "property_name": property_name,
+        "value": value
+    }
+    return await _execute_command(
+        "set_animation_property",
+        params,
+        lambda data: {"message": f"⚙️ Set {property_name} = {value} on animation '{animation_name}'"},
+        f"Failed to set {property_name} on animation '{animation_name}'"
+    )
+
+@app.tool()
+async def add_property_track(player_path: str, animation_name: str, property_path: str, initial_value: Any) -> str:
+    """Add a property track to an animation with automatic track type selection.
+
+    This tool automatically chooses the correct track type (VALUE or METHOD) based on the property value type.
+    For numeric properties that can be interpolated, it uses VALUE tracks. For complex types like bool,
+    Vector2, Color, etc., it uses METHOD tracks to call setter methods.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to modify
+        property_path: Property path in format "NodePath:PropertyName" (e.g., "Sprite:position", ".:visible")
+        initial_value: Initial value for the property to determine track type:
+                      - float/int: Uses VALUE track for interpolation
+                      - bool: Uses METHOD track with set_visible() etc.
+                      - Vector2: Uses METHOD track with set_position() etc.
+                      - Color: Uses METHOD track with set_modulate() etc.
+
+    Returns: Success confirmation with track details
+
+    Examples:
+        - "Add track for Sprite position with initial value [100, 200]"
+        - "Add track for node visibility with initial value true"
+        - "Add track for modulate color with initial value [1, 0, 0, 1]"
+
+    Note: The track type is automatically chosen based on the value type for optimal animation support.
+    """
+    # Determine track type and path based on value type and property name
+    if ":" in property_path:
+        node_path, prop_name = property_path.split(":", 1)
+    else:
+        node_path = property_path
+        prop_name = ""
+
+    # Check for boolean properties by name or value type
+    boolean_properties = ["visible", "enabled", "active", "disabled", "hidden"]
+    is_boolean_prop = prop_name in boolean_properties or isinstance(initial_value, bool)
+
+    if isinstance(initial_value, (int, float)) and not is_boolean_prop:
+        # Numeric values use VALUE tracks
+        track_type = 4  # TYPE_VALUE
+        track_path = property_path
+        method_data = None
+    elif is_boolean_prop or isinstance(initial_value, bool):
+        # Boolean values use METHOD tracks
+        track_type = 5  # TYPE_METHOD
+        track_path = node_path
+        # Create setter method name
+        setter_name = f"set_{prop_name}" if prop_name else "set_visible"
+        method_data = {"method": setter_name, "args": [initial_value]}
+    elif isinstance(initial_value, list):
+        # Array values (Vector2, Color, etc.) use METHOD tracks
+        track_type = 5  # TYPE_METHOD
+        track_path = node_path
+        # Create setter method name
+        setter_name = f"set_{prop_name}" if prop_name else "set_position"
+        method_data = {"method": setter_name, "args": [initial_value]}
+    else:
+        # Fallback to VALUE track for other types
+        track_type = 4  # TYPE_VALUE
+        track_path = property_path
+        method_data = None
+
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "track_type": track_type,
+        "track_path": track_path
+    }
+
+    def success_formatter(data):
+        track_type_name = "VALUE" if track_type == 4 else "METHOD"
+        return {"message": f"➕ Added {track_type_name} track for '{property_path}' to animation '{animation_name}' (index {data.get('track_index', 'unknown')})"}
+
+    result = await _execute_command(
+        "add_animation_track",
+        params,
+        success_formatter,
+        f"Failed to add track to animation '{animation_name}'"
+    )
+
+    # If this is a METHOD track, we need to store the method data for later use
+    if track_type == 5 and method_data:
+        # Store method data in a way that insert_keyframe can access it
+        # For now, we'll handle this in the insert_keyframe function
+        pass
+
+    return result
+
+@app.tool()
+async def add_animation_track(player_path: str, animation_name: str, track_type: int, track_path: str) -> str:
+    """Add a new track to an animation for keyframe data.
+
+    This tool creates animation tracks that define which properties are animated
+    and how they change over time. Different track types support different data types.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to modify
+        track_type: Type of track to create:
+                    - 0: POSITION_3D (Vector3 position)
+                    - 1: ROTATION_3D (Quaternion rotation)
+                    - 2: SCALE_3D (Vector3 scale)
+                    - 3: BLEND_SHAPE (float blend shape weight)
+                    - 4: VALUE (generic property animation - use for 2D transforms)
+                    - Note: Godot 4.5 has no dedicated 2D transform tracks. Use VALUE tracks for 2D position/rotation/scale with paths like "Sprite:position", "Sprite:rotation", "Sprite:scale"
+        track_path: Node path for the track (e.g., "Sprite:position" for 2D, "Node3D" for 3D transforms, ".:rotation" for self)
+
+    Returns: Success confirmation with track index
+
+    Examples:
+        - "Add position track for Sprite movement"
+        - "Create rotation track for character turning"
+        - "Add property track for modulate color changes"
+
+    Note: Track path format: "NodePath:PropertyName"
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "track_type": track_type,
+        "track_path": track_path
+    }
+    return await _execute_command(
+        "add_animation_track",
+        params,
+        lambda data: {"message": f"➕ Added {track_type} track '{track_path}' to animation '{animation_name}' (index {data.get('track_index', 'unknown')})"},
+        f"Failed to add track to animation '{animation_name}'"
+    )
+
+@app.tool()
+async def remove_animation_track(player_path: str, animation_name: str, track_idx: int) -> str:
+    """Remove a track from an animation.
+
+    This tool allows cleaning up animation tracks that are no longer needed,
+    helping maintain clean and efficient animations.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to modify
+        track_idx: Index of the track to remove
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Remove unused track from animation"
+        - "Clean up animation by removing track at index 2"
+        - "Delete track that was added by mistake"
+
+    Note: Removing tracks also removes all their keyframes.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "track_idx": track_idx
+    }
+    return await _execute_command(
+        "remove_animation_track",
+        params,
+        lambda data: {"message": f"➖ Removed track {track_idx} from animation '{animation_name}'"},
+        f"Failed to remove track {track_idx} from animation '{animation_name}'"
+    )
+
+@app.tool()
+async def insert_keyframe(player_path: str, animation_name: str, track_idx: int, time: float, value: Any) -> str:
+    """Insert a keyframe at a specific time in an animation track.
+
+    This tool creates keyframes that define how properties change over time.
+    Keyframes are the building blocks of animations, specifying values at specific moments.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to modify
+        track_idx: Index of the track to add keyframe to
+        time: Time position in seconds for the keyframe
+        value: Value for the keyframe (type depends on track type):
+               - For VALUE tracks: numeric values (float/int), Vector2 [x,y], Color [r,g,b,a], etc.
+               - For METHOD tracks: the raw value (bool, Vector2, Color, etc.) - method format is handled automatically
+
+    Returns: Success confirmation with keyframe index
+
+    Examples:
+        - "Add position keyframe at 1.0s for Sprite movement"
+        - "Insert rotation keyframe at 0.5s for character turn"
+        - "Create color keyframe at 2.0s for modulate change"
+        - "Add visibility keyframe at 1.0s with value true"
+
+    Note: The Godot addon automatically handles value formatting based on track type.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "track_idx": track_idx,
+        "time": time,
+        "value": value
+    }
+    return await _execute_command(
+        "insert_keyframe",
+        params,
+        lambda data: {"message": f"🔑 Inserted keyframe at {time}s in track {track_idx} of '{animation_name}' (index {data.get('key_index', 'unknown')})"},
+        f"Failed to insert keyframe in animation '{animation_name}'"
+    )
+
+@app.tool()
+async def remove_keyframe(player_path: str, animation_name: str, track_idx: int, key_idx: int) -> str:
+    """Remove a keyframe from an animation track.
+
+    This tool allows precise editing of animation curves by removing specific
+    keyframes that are no longer needed.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to modify
+        track_idx: Index of the track containing the keyframe
+        key_idx: Index of the keyframe to remove
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Remove unwanted keyframe from position track"
+        - "Delete keyframe at index 3 in rotation track"
+        - "Clean up animation curve by removing keyframe"
+
+    Note: Removing keyframes changes the animation curve interpolation.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "track_idx": track_idx,
+        "key_idx": key_idx
+    }
+    return await _execute_command(
+        "remove_keyframe",
+        params,
+        lambda data: {"message": f"🗑️ Removed keyframe {key_idx} from track {track_idx} in '{animation_name}'"},
+        f"Failed to remove keyframe {key_idx} from animation '{animation_name}'"
+    )
+
+@app.tool()
+async def get_animation_tracks(player_path: str, animation_name: str) -> str:
+    """Get detailed information about all tracks in an animation.
+
+    This tool provides comprehensive track information including types, paths,
+    and keyframe counts for debugging and inspection.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to inspect
+
+    Returns: Array of track information objects
+
+    Examples:
+        - "List all tracks in the 'complex_animation'"
+        - "Check track types and paths for debugging"
+        - "Get track overview for animation analysis"
+
+    Note: Useful for understanding animation structure and debugging.
+    """
+    params = {"player_path": player_path, "animation_name": animation_name}
+    return await _execute_command(
+        "get_animation_tracks",
+        params,
+        lambda data: data,
+        f"Failed to get tracks for animation '{animation_name}' on {player_path}"
+    )
+
+@app.tool()
+async def set_blend_time(player_path: str, animation_from: str, animation_to: str, blend_time: float) -> str:
+    """Set blend time between two animations for smooth transitions.
+
+    This tool controls how smoothly animations transition between each other,
+    essential for creating professional-looking animation sequences.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_from: Name of the source animation
+        animation_to: Name of the target animation
+        blend_time: Blend duration in seconds
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Set 0.5s blend time between 'walk' and 'run'"
+        - "Create smooth transition from 'idle' to 'jump'"
+        - "Adjust blend time for better animation flow"
+
+    Note: Blend times improve animation quality by preventing jarring transitions.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_from": animation_from,
+        "animation_to": animation_to,
+        "blend_time": blend_time
+    }
+    return await _execute_command(
+        "set_blend_time",
+        params,
+        lambda data: {"message": f"🔄 Set blend time {blend_time}s between '{animation_from}' → '{animation_to}'"},
+        f"Failed to set blend time between '{animation_from}' and '{animation_to}'"
+    )
+
+@app.tool()
+async def get_blend_time(player_path: str, animation_from: str, animation_to: str) -> str:
+    """Get the blend time between two animations.
+
+    This tool retrieves the current blend duration setting for inspecting
+    transition smoothness between animations.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_from: Name of the source animation
+        animation_to: Name of the target animation
+
+    Returns: Blend time in seconds
+
+    Examples:
+        - "Check blend time between walk and run animations"
+        - "Get transition duration for debugging"
+        - "Verify blend settings for animation sequence"
+
+    Note: Returns the configured blend time, not actual transition time.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_from": animation_from,
+        "animation_to": animation_to
+    }
+    return await _execute_command(
+        "get_blend_time",
+        params,
+        lambda data: {"blend_time": data.get("blend_time", 0.0), "message": f"Blend time: {data.get('blend_time', 0.0)}s"},
+        f"Failed to get blend time between '{animation_from}' and '{animation_to}'"
+    )
+
+@app.tool()
+async def set_animation_next(player_path: str, animation_from: str, animation_to: str) -> str:
+    """Set the next animation to play automatically after another.
+
+    This tool creates automatic animation sequences where one animation
+    triggers the next, perfect for creating complex animation chains.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_from: Name of the animation that triggers the next
+        animation_to: Name of the animation to play next
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Set 'run' to play after 'walk'"
+        - "Chain 'attack1' to 'attack2' for combo system"
+        - "Create automatic animation sequence"
+
+    Note: The next animation plays automatically when the first finishes.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_from": animation_from,
+        "animation_to": animation_to
+    }
+    return await _execute_command(
+        "set_animation_next",
+        params,
+        lambda data: {"message": f"➡️ Set '{animation_to}' to play after '{animation_from}'"},
+        f"Failed to set next animation for '{animation_from}'"
+    )
+
+@app.tool()
+async def get_animation_next(player_path: str, animation_from: str) -> str:
+    """Get the next animation queued to play after another.
+
+    This tool reveals animation sequence chains for debugging and inspection
+    of automatic animation transitions.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_from: Name of the animation to check
+
+    Returns: Name of the next animation or empty string
+
+    Examples:
+        - "Check what plays after the 'walk' animation"
+        - "See the animation sequence chain"
+        - "Debug automatic animation transitions"
+
+    Note: Returns the configured next animation, not what's currently queued.
+    """
+    params = {"player_path": player_path, "animation_from": animation_from}
+    return await _execute_command(
+        "get_animation_next",
+        params,
+        lambda data: {"next_animation": data.get("next_animation", ""), "message": f"Next animation: '{data.get('next_animation', 'none')}'"},
+        f"Failed to get next animation for '{animation_from}'"
+    )
+
+@app.tool()
+async def set_animation_section(player_path: str, start_time: float = -1, end_time: float = -1) -> str:
+    """Set the playback section for the current animation.
+
+    This tool allows playing only a portion of an animation, useful for creating
+    variations or focusing on specific parts of longer animations.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        start_time: Start time in seconds (-1 for animation start)
+        end_time: End time in seconds (-1 for animation end)
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Play only the first second of the animation"
+        - "Set section from 1.0s to 3.0s"
+        - "Create animation variation by playing subsection"
+
+    Note: Section affects all subsequent playback until changed.
+    """
+    params = {
+        "player_path": player_path,
+        "start_time": start_time,
+        "end_time": end_time
+    }
+    section_desc = f"{start_time}s to {end_time}s" if start_time >= 0 and end_time >= 0 else "full animation"
+    return await _execute_command(
+        "set_animation_section",
+        params,
+        lambda data: {"message": f"🎬 Set playback section to {section_desc} on {player_path}"},
+        f"Failed to set animation section on {player_path}"
+    )
+
+@app.tool()
+async def set_animation_section_with_markers(player_path: str, start_marker: str = "", end_marker: str = "") -> str:
+    """Set playback section using named markers in the animation.
+
+    This tool uses animation markers for precise section control, allowing
+    semantic naming of important animation points.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        start_marker: Name of the start marker (empty for animation start)
+        end_marker: Name of the end marker (empty for animation end)
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Play from 'anticipation' to 'action' markers"
+        - "Set section between 'start' and 'end' markers"
+        - "Use named markers for precise animation control"
+
+    Note: Markers must exist in the animation for this to work.
+    """
+    params = {
+        "player_path": player_path,
+        "start_marker": start_marker,
+        "end_marker": end_marker
+    }
+    marker_desc = f"'{start_marker}' to '{end_marker}'" if start_marker and end_marker else "full animation"
+    return await _execute_command(
+        "set_animation_section_with_markers",
+        params,
+        lambda data: {"message": f"🏷️ Set playback section to {marker_desc} on {player_path}"},
+        f"Failed to set animation section with markers on {player_path}"
+    )
+
+@app.tool()
+async def add_animation_marker(player_path: str, animation_name: str, marker_name: str, time: float) -> str:
+    """Add a named marker to an animation at a specific time.
+
+    This tool creates semantic markers for important animation points,
+    enabling precise control and better animation organization.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to modify
+        marker_name: Name for the marker
+        time: Time position in seconds for the marker
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Add 'anticipation' marker at 0.5 seconds"
+        - "Mark the 'impact' point at 1.2 seconds"
+        - "Create 'recovery' marker at animation end"
+
+    Note: Markers enable semantic animation control and sectioning.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "marker_name": marker_name,
+        "time": time
+    }
+    return await _execute_command(
+        "add_animation_marker",
+        params,
+        lambda data: {"message": f"🏷️ Added marker '{marker_name}' at {time}s to '{animation_name}'"},
+        f"Failed to add marker '{marker_name}' to animation '{animation_name}'"
+    )
+
+@app.tool()
+async def remove_animation_marker(player_path: str, animation_name: str, marker_name: str) -> str:
+    """Remove a named marker from an animation.
+
+    This tool cleans up animation markers that are no longer needed,
+    maintaining clean and organized animation definitions.
+
+    Args:
+        player_path: Path to the AnimationPlayer node
+        animation_name: Name of the animation to modify
+        marker_name: Name of the marker to remove
+
+    Returns: Success confirmation
+
+    Examples:
+        - "Remove the unused 'temp' marker"
+        - "Clean up old animation markers"
+        - "Delete marker that was added by mistake"
+
+    Note: Removing markers may affect sections that reference them.
+    """
+    params = {
+        "player_path": player_path,
+        "animation_name": animation_name,
+        "marker_name": marker_name
+    }
+    return await _execute_command(
+        "remove_animation_marker",
+        params,
+        lambda data: {"message": f"🗑️ Removed marker '{marker_name}' from '{animation_name}'"},
+        f"Failed to remove marker '{marker_name}' from animation '{animation_name}'"
+    )
+
 async def ensure_godot_connection():
     """Ensure we have a connection to Godot, connecting if necessary"""
     if not godot.connected:

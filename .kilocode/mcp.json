@@ -2,7 +2,9 @@
   "mcpServers": {
     "GODOT-MCP": {
       "command": "/home/sk/godot-mcp-actually-works/venv/bin/python",
-      "args": ["/home/sk/godot-mcp-actually-works/godot-mcp-server.py"],
+      "args": [
+        "/home/sk/godot-mcp-actually-works/godot-mcp-server.py"
+      ],
       "env": {
         "GODOT_HOST": "localhost",
         "GODOT_PORT": "9080"
@@ -52,13 +54,54 @@
         "open_scene",
         "list_directory",
         "save_scene_as",
-        "save_scene"
+        "save_scene",
+        "create_animation_player",
+        "get_animation_player_info",
+        "create_animation",
+        "add_animation_track",
+        "set_animation_player_property",
+        "create_animation_library",
+        "get_animation_library_list",
+        "add_animation_marker",
+        "set_animation_speed",
+        "set_animation_section",
+        "clear_animation_queue",
+        "get_animation_state",
+        "rename_animation",
+        "remove_animation_player",
+        "play_animation",
+        "pause_animation",
+        "stop_animation",
+        "seek_animation",
+        "queue_animation",
+        "load_animation_library",
+        "add_animation_to_library",
+        "remove_animation_from_library",
+        "get_animation_info",
+        "set_animation_property",
+        "insert_keyframe",
+        "get_animation_tracks",
+        "set_blend_time",
+        "get_blend_time",
+        "set_animation_next",
+        "get_animation_next",
+        "set_animation_section_with_markers",
+        "remove_animation_marker",
+        "remove_animation_track",
+        "add_property_track"
       ]
     },
     "exa": {
       "command": "npx",
-      "args": ["-y", "mcp-remote", "https://mcp.exa.ai/mcp"],
-      "alwaysAllow": ["web_search_exa", "get_code_context_exa"]
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.exa.ai/mcp"
+      ],
+      "alwaysAllow": [
+        "web_search_exa",
+        "get_code_context_exa"
+      ]
     }
   }
 }
