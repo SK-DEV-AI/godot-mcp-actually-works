@@ -101,6 +101,7 @@ func _enter_tree() -> void:
 		"create_resource": _handle_create_resource,
 		"load_resource": _handle_load_resource,
 		"save_resource": _handle_save_resource,
+		"create_and_save_resource": _handle_create_and_save_resource,
 		"get_resource_dependencies": _handle_get_resource_dependencies,
 		"list_directory": _handle_list_directory,
 		"get_resource_metadata": _handle_get_resource_metadata,
@@ -703,6 +704,19 @@ func _handle_save_resource(params: Dictionary) -> Dictionary:
 		return {"status": "error", "error": "resource and save_path are required"}
 
 	var result = resource_utils.save_resource(resource, save_path, flags)
+	if result.has("error"):
+		return {"status": "error", "error": result.error}
+	return {"status": "success"}
+
+func _handle_create_and_save_resource(params: Dictionary) -> Dictionary:
+	var resource_type = params.get("resource_type", "")
+	var save_path = params.get("save_path", "")
+	var flags = params.get("flags", 0)
+
+	if resource_type.is_empty() or save_path.is_empty():
+		return {"status": "error", "error": "resource_type and save_path are required"}
+
+	var result = resource_utils.create_and_save_resource(resource_type, save_path, flags)
 	if result.has("error"):
 		return {"status": "error", "error": result.error}
 	return {"status": "success"}

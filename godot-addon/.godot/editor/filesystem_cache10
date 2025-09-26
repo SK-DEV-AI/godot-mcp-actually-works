@@ -1,10 +1,14 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1758886853
+::res://::1758891275
+packed_sprite.tscn::PackedScene::6222621088219622048::1758889069::0::1::::<><><>0<>0<><>::
+test_scene.tscn::PackedScene::3451553307581155660::1758890267::0::1::::<><><>0<>0<><>::
 ::res://addons/::1758885207
 ::res://addons/godot_mcp_node_control/::1758886747
-mcp_node_control.gd::GDScript::2853949196612129418::1758885207::0::1::::<>EditorPlugin<><>0<>1<><>::
+mcp_node_control.gd::GDScript::2853949196612129418::1758891160::0::1::::<>EditorPlugin<><>0<>1<><>::
 node_utils.gd::GDScript::5556152734383759694::1758885207::0::1::::<>Node<><>0<>0<><>::
 plugin.cfg::TextFile::-1::1758885207::0::1::::<><><>0<>0<><>::
-resource_utils.gd::GDScript::5422315286696362248::1758885207::0::1::::<>Node<><>0<>1<><>::
+resource_utils.gd::GDScript::5422315286696362248::1758891120::0::1::::<>Node<><>0<>1<><>::
 scene_utils.gd::GDScript::1949736639206165320::1758886747::0::1::::<>Node<><>0<>0<><>::
 script_utils.gd::GDScript::3338540414778295365::1758885207::0::1::::<>Node<><>0<>0<><>::
+::res://scripts/::1758890593
+TestScript.gd::GDScript::6511782956164888017::1758890593::0::1::::<>Node<><>0<>0<><>::

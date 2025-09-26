@@ -66,6 +66,24 @@ func list_directory(dir_path: String) -> Dictionary:
 	return {"contents": contents}
 
 
+# Create and save a resource in one operation
+func create_and_save_resource(resource_type: String, save_path: String, flags: int = 0) -> Dictionary:
+	var resource_class = ClassDB.instantiate(resource_type)
+	if resource_class == null:
+		return {"error": "Failed to create resource of type: " + resource_type}
+
+	if not (resource_class is Resource):
+		resource_class.free()
+		return {"error": "Type " + resource_type + " is not a Resource"}
+
+	var error = ResourceSaver.save(resource_class, save_path, flags)
+	if error != OK:
+		resource_class.free()
+		return {"error": "Failed to save resource to " + save_path + ": " + error_string(error)}
+
+	resource_class.free()
+	return {"success": true}
+
 # Get resource metadata
 func get_resource_metadata(resource_path: String) -> Dictionary:
 	var metadata = {
@@ -87,7 +105,8 @@ func get_resource_metadata(resource_path: String) -> Dictionary:
 		return metadata
 
 	metadata["type"] = resource.get_class()
-	resource.free()  # Clean up
+	# Note: Don't call resource.free() - ResourceLoader.load() returns cached resources
+	# that are managed by Godot's reference counting system
 
 	# Get file size
 	var file = FileAccess.open(resource_path, FileAccess.READ)

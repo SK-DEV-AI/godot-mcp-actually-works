@@ -1016,39 +1016,39 @@ async def load_resource(resource_path: str) -> str:
     )
 
 @app.tool()
-async def save_resource(save_path: str, resource_data: Any, flags: int = 0) -> str:
-    """Save a resource to disk in Godot's native format.
+async def save_resource(resource_type: str, save_path: str, flags: int = 0) -> str:
+    """Create and save a resource to disk in Godot's native format.
 
-    This tool saves resources to .tres (text resource) or .res (binary resource) files.
-    Use this to persist resources created programmatically or modified at runtime.
+    This tool creates a new resource of the specified type and immediately saves it to disk.
+    Use this to create and persist resources in one operation.
 
     Args:
+        resource_type: Godot resource class name (e.g., "Texture2D", "AudioStream", "PackedScene", "Resource")
         save_path: Path where to save the resource (e.g., "res://my_resource.tres")
-        resource_data: The resource object to save (from create_resource or load_resource)
         flags: Save flags (0 = default, 1 = compress) (optional)
 
-    Returns: Success confirmation of resource save
+    Returns: Success confirmation of resource creation and save
 
     Examples:
-        - "Save the created texture to res://textures/new_texture.tres"
-        - "Export the scene as a PackedScene to res://scenes/level.tscn"
-        - "Save the audio with compression to res://audio/compressed.ogg"
-        - "Persist the configuration to res://config/game_settings.tres"
+        - "Create and save a new Texture2D resource to res://textures/new_texture.tres"
+        - "Create and save an AudioStream resource to res://audio/new_sound.ogg"
+        - "Create and save a PackedScene resource to res://scenes/template.tscn"
+        - "Create and save a custom Resource to res://config/settings.tres"
 
     Note: Use compression flag (1) for smaller file sizes, especially for large resources.
     Resources are saved in Godot's native format and can be loaded with load_resource().
     **Warning: This is a file system operation and cannot be undone.**
     """
-    params = {"resource": resource_data, "save_path": save_path, "flags": flags}
+    params = {"resource_type": resource_type, "save_path": save_path, "flags": flags}
     def success_formatter(data):
         compression_note = " with compression" if flags & 1 else ""
-        return {"message": f"💾 Successfully saved resource to {save_path}{compression_note}"}
+        return {"message": f"💾 Successfully created and saved {resource_type} resource to {save_path}{compression_note}"}
 
     return await _execute_command(
-        "save_resource",
+        "create_and_save_resource",
         params,
         success_formatter,
-        f"Failed to save resource to {save_path}"
+        f"Failed to create and save {resource_type} resource to {save_path}"
     )
 
 @app.tool()
