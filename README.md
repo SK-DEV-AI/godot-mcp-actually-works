@@ -1,4 +1,4 @@
-# Godot MCP Node Control
+# Godot MCP 
 
 A modern Model Context Protocol (MCP) server for controlling Godot Engine nodes, built with FastMCP and designed for Godot 4.5. This project provides AI assistants with powerful tools to manipulate Godot scenes, nodes, and properties through natural language commands.
 
