@@ -159,6 +159,27 @@ Perfect for game development workflows, prototyping, and automated scene constru
 All operations are undoable and include robust error handling with Godot-specific error messages."""
 )
 
+async def _execute_command(command_type: str, params: Dict[str, Any], success_formatter, error_prefix: str) -> str:
+    """Helper to execute a command in Godot and handle response."""
+    try:
+        await ensure_godot_connection()
+        command = {"type": command_type, "params": params}
+        response = await godot.send_command(command)
+
+        if response.get("status") == "success":
+            data = success_formatter(response.get("data", {}))
+            return json.dumps({"status": "success", "data": data}, indent=2)
+        else:
+            error_msg = response.get('error', 'Unknown error')
+            if error_msg == "No scene is currently open":
+                error_data = {"message": f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."}
+            else:
+                error_data = {"message": f"❌ {error_prefix}: {error_msg}"}
+            return json.dumps({"status": "error", "error": error_data}, indent=2)
+    except Exception as e:
+        error_data = {"message": f"❌ {error_prefix}: {str(e)}"}
+        return json.dumps({"status": "error", "error": error_data}, indent=2)
+
 @app.tool()
 async def get_scene_tree() -> str:
     """Get the complete scene tree structure with all nodes, their types, and hierarchy.
@@ -179,34 +200,12 @@ async def get_scene_tree() -> str:
     - "What nodes are in my scene?"
     - "Get an overview of the scene hierarchy"
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_scene_tree",
-            "params": {}
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            tree_data = response.get("data", {})
-            scene_path = tree_data.get("scene_path", "unsaved")
-            root_name = tree_data.get("root_node", "Unknown")
-
-            summary = f"Scene: {scene_path}\nRoot: {root_name}\n\n"
-            summary += "Complete scene tree structure:\n"
-            summary += json.dumps(tree_data, indent=2)
-
-            return summary
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ {error_msg}"
-
-    except Exception as e:
-        return f"Failed to get scene tree: {str(e)}"
+    return await _execute_command(
+        "get_scene_tree",
+        {},
+        lambda data: data,
+        "Failed to get scene tree"
+    )
 
 @app.tool()
 async def create_node(node_type: str, parent_path: str = ".", node_name: str = "") -> str:
@@ -232,32 +231,22 @@ async def create_node(node_type: str, parent_path: str = ".", node_name: str = "
 
     Note: All changes are undoable in Godot's editor.
     """
-    try:
-        await ensure_godot_connection()
+    params = {
+        "node_type": node_type,
+        "parent_path": parent_path,
+        "node_name": node_name
+    }
+    def success_formatter(data):
+        node_path = data.get('node_path', 'Unknown')
+        node_name_created = data.get('node_name', node_type)
+        return {"message": f"✅ Created {node_type} node '{node_name_created}' at path: {node_path}"}
 
-
-        command = {
-            "type": "create_node",
-            "params": {
-                "node_type": node_type,
-                "parent_path": parent_path,
-                "node_name": node_name
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            node_path = response.get('data', {}).get('node_path', 'Unknown')
-            node_name_created = response.get('data', {}).get('node_name', node_type)
-            return f"✅ Created {node_type} node '{node_name_created}' at path: {node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to create {node_type} node: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to create node: {str(e)}"
+    return await _execute_command(
+        "create_node",
+        params,
+        success_formatter,
+        f"Failed to create {node_type} node"
+    )
 
 @app.tool()
 async def delete_node(node_path: str) -> str:
@@ -266,28 +255,12 @@ async def delete_node(node_path: str) -> str:
     Args:
         node_path: Path to the node to delete
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "delete_node",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"🗑️ Successfully deleted node: {node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to delete node {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to delete node: {str(e)}"
+    return await _execute_command(
+        "delete_node",
+        {"node_path": node_path},
+        lambda data: {"message": f"🗑️ Successfully deleted node: {node_path}"},
+        f"Failed to delete node {node_path}"
+    )
 
 @app.tool()
 async def get_node_properties(node_path: str) -> str:
@@ -296,28 +269,12 @@ async def get_node_properties(node_path: str) -> str:
     Args:
         node_path: Path to the node
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_node_properties",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return json.dumps(response.get("data", {}), indent=2)
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Error: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to get node properties: {str(e)}"
+    return await _execute_command(
+        "get_node_properties",
+        {"node_path": node_path},
+        lambda data: data,
+        "Failed to get node properties"
+    )
 
 @app.tool()
 async def set_node_property(node_path: str, property_name: str, value: Any) -> str:
@@ -351,30 +308,17 @@ async def set_node_property(node_path: str, property_name: str, value: Any) -> s
 
     Note: Use get_node_properties first to see available properties and their current values.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "set_node_property",
-            "params": {
-                "node_path": node_path,
-                "property_name": property_name,
-                "value": value
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"✅ Set {property_name} = {value} on node {node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to set {property_name} on {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to set node property: {str(e)}"
+    params = {
+        "node_path": node_path,
+        "property_name": property_name,
+        "value": value
+    }
+    return await _execute_command(
+        "set_node_property",
+        params,
+        lambda data: {"message": f"✅ Set {property_name} = {value} on node {node_path}"},
+        f"Failed to set {property_name} on {node_path}"
+    )
 
 @app.tool()
 async def move_node(node_path: str, new_parent_path: str, new_name: str = "") -> str:
@@ -385,30 +329,17 @@ async def move_node(node_path: str, new_parent_path: str, new_name: str = "") ->
         new_parent_path: Path to the new parent node
         new_name: New name for the node (optional)
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "move_node",
-            "params": {
-                "node_path": node_path,
-                "new_parent_path": new_parent_path,
-                "new_name": new_name
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📦 Successfully moved node to {response.get('data', {}).get('new_path', 'new location')}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to move node {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to move node: {str(e)}"
+    params = {
+        "node_path": node_path,
+        "new_parent_path": new_parent_path,
+        "new_name": new_name
+    }
+    return await _execute_command(
+        "move_node",
+        params,
+        lambda data: {"message": f"📦 Successfully moved node to {data.get('new_path', 'new location')}"},
+        f"Failed to move node {node_path}"
+    )
 
 @app.tool()
 async def duplicate_node(node_path: str, new_name: str = "") -> str:
@@ -418,29 +349,13 @@ async def duplicate_node(node_path: str, new_name: str = "") -> str:
         node_path: Path to the node to duplicate
         new_name: Name for the duplicated node (optional)
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "duplicate_node",
-            "params": {
-                "node_path": node_path,
-                "new_name": new_name
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📋 Successfully duplicated node: {response.get('data', {}).get('duplicate_path', 'duplicate')}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to duplicate node {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to duplicate node: {str(e)}"
+    params = {"node_path": node_path, "new_name": new_name}
+    return await _execute_command(
+        "duplicate_node",
+        params,
+        lambda data: {"message": f"📋 Successfully duplicated node: {data.get('duplicate_path', 'duplicate')}"},
+        f"Failed to duplicate node {node_path}"
+    )
 
 @app.tool()
 async def set_node_transform(node_path: str, position: List[float] = None, rotation: List[float] = None, scale: List[float] = None) -> str:
@@ -467,36 +382,25 @@ async def set_node_transform(node_path: str, position: List[float] = None, rotat
 
     Note: Only specify the transforms you want to change - others remain unchanged.
     """
-    try:
-        await ensure_godot_connection()
+    params = {
+        "node_path": node_path,
+        "position": position,
+        "rotation": rotation,
+        "scale": scale
+    }
+    def success_formatter(data):
+        changes = []
+        if position: changes.append(f"position={position}")
+        if rotation: changes.append(f"rotation={rotation}")
+        if scale: changes.append(f"scale={scale}")
+        return {"message": f"✅ Set transform on {node_path}: {', '.join(changes)}"}
 
-
-        command = {
-            "type": "set_node_transform",
-            "params": {
-                "node_path": node_path,
-                "position": position,
-                "rotation": rotation,
-                "scale": scale
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            changes = []
-            if position: changes.append(f"position={position}")
-            if rotation: changes.append(f"rotation={rotation}")
-            if scale: changes.append(f"scale={scale}")
-            change_str = ", ".join(changes)
-            return f"✅ Set transform on {node_path}: {change_str}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to set transform on {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to set node transform: {str(e)}"
+    return await _execute_command(
+        "set_node_transform",
+        params,
+        success_formatter,
+        f"Failed to set transform on {node_path}"
+    )
 
 @app.tool()
 async def set_node_visibility(node_path: str, visible: bool) -> str:
@@ -506,29 +410,13 @@ async def set_node_visibility(node_path: str, visible: bool) -> str:
         node_path: Path to the node
         visible: Whether the node should be visible
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "set_node_visibility",
-            "params": {
-                "node_path": node_path,
-                "visible": visible
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"👁️ Successfully set visibility of {node_path} to {visible}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to set visibility of {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to set node visibility: {str(e)}"
+    params = {"node_path": node_path, "visible": visible}
+    return await _execute_command(
+        "set_node_visibility",
+        params,
+        lambda data: {"message": f"👁️ Successfully set visibility of {node_path} to {visible}"},
+        f"Failed to set visibility of {node_path}"
+    )
 
 @app.tool()
 async def connect_signal(from_node_path: str, signal_name: str, to_node_path: str, method_name: str) -> str:
@@ -554,31 +442,21 @@ async def connect_signal(from_node_path: str, signal_name: str, to_node_path: st
     Note: Use get_node_signals() first to see available signals on a node.
     The target method must exist and be properly defined in the receiving node's script.
     """
-    try:
-        await ensure_godot_connection()
+    params = {
+        "from_node_path": from_node_path,
+        "signal_name": signal_name,
+        "to_node_path": to_node_path,
+        "method_name": method_name
+    }
+    def success_formatter(data):
+        return {"message": f"🔗 Connected signal '{signal_name}' from {from_node_path} → {method_name}() on {to_node_path}"}
 
-
-        command = {
-            "type": "connect_signal",
-            "params": {
-                "from_node_path": from_node_path,
-                "signal_name": signal_name,
-                "to_node_path": to_node_path,
-                "method_name": method_name
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"🔗 Connected signal '{signal_name}' from {from_node_path} → {method_name}() on {to_node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to connect signal '{signal_name}' from {from_node_path} to {to_node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to connect signal: {str(e)}"
+    return await _execute_command(
+        "connect_signal",
+        params,
+        success_formatter,
+        f"Failed to connect signal '{signal_name}' from {from_node_path} to {to_node_path}"
+    )
 
 @app.tool()
 async def disconnect_signal(from_node_path: str, signal_name: str, to_node_path: str, method_name: str) -> str:
@@ -590,31 +468,21 @@ async def disconnect_signal(from_node_path: str, signal_name: str, to_node_path:
         to_node_path: Path to the node that receives the signal
         method_name: Name of the method
     """
-    try:
-        await ensure_godot_connection()
+    params = {
+        "from_node_path": from_node_path,
+        "signal_name": signal_name,
+        "to_node_path": to_node_path,
+        "method_name": method_name
+    }
+    def success_formatter(data):
+        return {"message": f"🔌 Successfully disconnected signal {signal_name} from {from_node_path} to {method_name} on {to_node_path}"}
 
-
-        command = {
-            "type": "disconnect_signal",
-            "params": {
-                "from_node_path": from_node_path,
-                "signal_name": signal_name,
-                "to_node_path": to_node_path,
-                "method_name": method_name
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"🔌 Successfully disconnected signal {signal_name} from {from_node_path} to {method_name} on {to_node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to disconnect signal {signal_name}: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to disconnect signal: {str(e)}"
+    return await _execute_command(
+        "disconnect_signal",
+        params,
+        success_formatter,
+        f"Failed to disconnect signal {signal_name}"
+    )
 
 @app.tool()
 async def get_node_signals(node_path: str) -> str:
@@ -623,28 +491,12 @@ async def get_node_signals(node_path: str) -> str:
     Args:
         node_path: Path to the node
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_node_signals",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return json.dumps(response.get("data", {}), indent=2)
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Error: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to get node signals: {str(e)}"
+    return await _execute_command(
+        "get_node_signals",
+        {"node_path": node_path},
+        lambda data: data,
+        "Error"
+    )
 
 @app.tool()
 async def get_node_methods(node_path: str) -> str:
@@ -653,28 +505,12 @@ async def get_node_methods(node_path: str) -> str:
     Args:
         node_path: Path to the node
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_node_methods",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return json.dumps(response.get("data", {}), indent=2)
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Error: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to get node methods: {str(e)}"
+    return await _execute_command(
+        "get_node_methods",
+        {"node_path": node_path},
+        lambda data: data,
+        "Error"
+    )
 
 @app.tool()
 async def call_node_method(node_path: str, method_name: str, args: List[Any] = None) -> str:
@@ -685,31 +521,17 @@ async def call_node_method(node_path: str, method_name: str, args: List[Any] = N
         method_name: Name of the method to call
         args: Arguments to pass to the method (optional)
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "call_node_method",
-            "params": {
-                "node_path": node_path,
-                "method_name": method_name,
-                "args": args or []
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            result = response.get("data", {}).get("result")
-            return f"⚡ Method {method_name} called successfully. Result: {result}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to call method {method_name} on {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to call node method: {str(e)}"
+    params = {
+        "node_path": node_path,
+        "method_name": method_name,
+        "args": args or []
+    }
+    return await _execute_command(
+        "call_node_method",
+        params,
+        lambda data: {"message": f"⚡ Method {method_name} called successfully. Result: {data.get('result')}"},
+        f"Failed to call method {method_name} on {node_path}"
+    )
 
 @app.tool()
 async def find_nodes_by_type(node_type: str, search_root: str = ".") -> str:
@@ -719,30 +541,17 @@ async def find_nodes_by_type(node_type: str, search_root: str = ".") -> str:
         node_type: The type of nodes to find (e.g., 'Node2D', 'Sprite2D')
         search_root: Root path to start searching from (default: scene root)
     """
-    try:
-        await ensure_godot_connection()
+    params = {"node_type": node_type, "search_root": search_root}
+    def success_formatter(data):
+        nodes = data.get("nodes", [])
+        return {"nodes": nodes, "message": f"🔍 Found {len(nodes)} nodes of type {node_type}."}
 
-
-        command = {
-            "type": "find_nodes_by_type",
-            "params": {
-                "node_type": node_type,
-                "search_root": search_root
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            nodes = response.get("data", {}).get("nodes", [])
-            return f"🔍 Found {len(nodes)} nodes of type {node_type}: {', '.join(nodes)}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to find nodes of type {node_type}: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to find nodes: {str(e)}"
+    return await _execute_command(
+        "find_nodes_by_type",
+        params,
+        success_formatter,
+        f"Failed to find nodes of type {node_type}"
+    )
 
 @app.tool()
 async def get_node_children(node_path: str, recursive: bool = False) -> str:
@@ -752,31 +561,18 @@ async def get_node_children(node_path: str, recursive: bool = False) -> str:
         node_path: Path to the parent node
         recursive: Whether to get all descendants recursively
     """
-    try:
-        await ensure_godot_connection()
+    params = {"node_path": node_path, "recursive": recursive}
+    def success_formatter(data):
+        children = data.get("children", [])
+        mode = "recursive" if recursive else "direct"
+        return {"children": children, "message": f"👶 Found {len(children)} {mode} children of {node_path}."}
 
-
-        command = {
-            "type": "get_node_children",
-            "params": {
-                "node_path": node_path,
-                "recursive": recursive
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            children = response.get("data", {}).get("children", [])
-            mode = "recursive" if recursive else "direct"
-            return f"👶 Found {len(children)} {mode} children of {node_path}: {', '.join(children)}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to get children of {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to get node children: {str(e)}"
+    return await _execute_command(
+        "get_node_children",
+        params,
+        success_formatter,
+        f"Failed to get children of {node_path}"
+    )
 
 @app.tool()
 async def add_script_to_node(node_path: str, script_content: str) -> str:
@@ -803,70 +599,39 @@ async def add_script_to_node(node_path: str, script_content: str) -> str:
     - "Add collision detection script to handle player-enemy interactions"
 
     Script Example:
-    ```
-    extends CharacterBody2D
+    ```gdscript
+        extends CharacterBody2D
 
-    @export var speed = 300.0
-    @export var jump_velocity = -400.0
+        @export var speed = 300.0
+        @export var jump_velocity = -400.0
 
-    func _physics_process(delta):
-        # Movement logic here
-        var direction = Input.get_axis("ui_left", "ui_right")
-        velocity.x = direction * speed
-        move_and_slide()
+        func _physics_process(delta):
+            # Movement logic here
+            var direction = Input.get_axis("ui_left", "ui_right")
+            velocity.x = direction * speed
+            move_and_slide()
     ```
 
     Note: The script is validated for syntax errors before attachment.
     Use get_node_properties() to verify the script was attached successfully.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "add_script_to_node",
-            "params": {
-                "node_path": node_path,
-                "script_content": script_content
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📝 Successfully attached GDScript to {node_path} ({len(script_content)} characters)"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to add script to {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to add script to node: {str(e)}"
+    params = {"node_path": node_path, "script_content": script_content}
+    return await _execute_command(
+        "add_script_to_node",
+        params,
+        lambda data: {"message": f"📝 Successfully attached GDScript to {node_path} ({len(script_content)} characters)"},
+        f"Failed to add script to {node_path}"
+    )
 
 @app.tool()
 async def get_debug_info() -> str:
     """Get current debug information and errors from Godot"""
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_debug_info",
-            "params": {}
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            debug_data = response.get("data", {})
-            return json.dumps(debug_data, indent=2)
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to get debug info: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to get debug info: {str(e)}"
+    return await _execute_command(
+        "get_debug_info",
+        {},
+        lambda data: data,
+        "Failed to get debug info"
+    )
 
 @app.tool()
 async def check_connection() -> str:
@@ -878,33 +643,29 @@ async def check_connection() -> str:
     Returns: Connection status and health information
     """
     try:
-        # Ensure we have a connection to Godot
         await ensure_godot_connection()
-
-        # Try to get debug info to verify communication
-        command = {
-            "type": "get_debug_info",
-            "params": {}
-        }
+        command = {"type": "get_debug_info", "params": {}}
         response = await godot.send_command(command)
 
         if response.get("status") == "success":
             debug_data = response.get("data", {})
             server_info = debug_data.get("server_status", {})
 
-            status_report = "✅ Connection Status: Healthy\n\n"
-            status_report += f"📡 WebSocket: Connected to {config.godot_host}:{config.godot_port}\n"
-            status_report += f"🏠 Godot Version: {debug_data.get('godot_version', {}).get('string', 'Unknown')}\n"
-            status_report += f"👥 Active Clients: {server_info.get('client_count', 0)}\n"
-            status_report += f"🕒 Server Uptime: {debug_data.get('timestamp', 'Unknown')}\n"
-            status_report += f"📝 Error Log Size: {len(debug_data.get('error_log', []))} entries\n"
-
-            return status_report
+            status_report = {
+                "status": "Healthy",
+                "websocket_host": config.godot_host,
+                "websocket_port": config.godot_port,
+                "godot_version": debug_data.get('godot_version', {}).get('string', 'Unknown'),
+                "active_clients": server_info.get('client_count', 0),
+                "server_uptime": debug_data.get('timestamp', 'Unknown'),
+                "error_log_size": len(debug_data.get('error_log', []))
+            }
+            return json.dumps({"status": "success", "data": status_report}, indent=2)
         else:
-            return f"⚠️ Connected but communication failed: {response.get('error', 'Unknown error')}"
+            return json.dumps({"status": "error", "error": {"message": f"⚠️ Connected but communication failed: {response.get('error', 'Unknown error')}"}}, indent=2)
 
     except Exception as e:
-        return f"❌ Connection check failed: {str(e)}"
+        return json.dumps({"status": "error", "error": {"message": f"❌ Connection check failed: {str(e)}"}}, indent=2)
 
 @app.tool()
 async def run_scene() -> str:
@@ -914,50 +675,22 @@ async def run_scene() -> str:
     Note: This plays the scene in game mode, not opens it in the editor.
     For editor operations, you need to have a scene open in Godot's editor first.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "run_scene",
-            "params": {}
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return "▶️ Scene started successfully"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to start scene: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to run scene: {str(e)}"
+    return await _execute_command(
+        "run_scene",
+        {},
+        lambda data: {"message": "▶️ Scene started successfully"},
+        "Failed to start scene"
+    )
 
 @app.tool()
 async def stop_scene() -> str:
     """Stop the running scene in Godot"""
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "stop_scene",
-            "params": {}
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return "⏹️ Scene stopped successfully"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to stop scene: {error_msg}"
-
-    except Exception as e:
-        return f"Failed to stop scene: {str(e)}"
+    return await _execute_command(
+        "stop_scene",
+        {},
+        lambda data: {"message": "⏹️ Scene stopped successfully"},
+        "Failed to stop scene"
+    )
 
 @app.tool()
 async def get_script_content(node_path: str) -> str:
@@ -979,31 +712,12 @@ async def get_script_content(node_path: str) -> str:
     Note: Use this tool before modifying scripts to understand the current implementation.
     The returned content includes the full GDScript source code for analysis or backup.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_script_content",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            content = data.get("content", "")
-            resource_path = data.get("resource_path", "")
-            return f"📄 Script content from {node_path} ({len(content)} chars):\n\n{content}\n\nResource path: {resource_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to get script content from {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to get script content: {str(e)}"
+    return await _execute_command(
+        "get_script_content",
+        {"node_path": node_path},
+        lambda data: data,
+        f"Failed to get script content from {node_path}"
+    )
 
 @app.tool()
 async def set_script_content(node_path: str, content: str) -> str:
@@ -1027,29 +741,13 @@ async def set_script_content(node_path: str, content: str) -> str:
     Note: This completely replaces the existing script. Use get_script_content() first to preserve existing code.
     The new script is validated for syntax errors before attachment. Changes are undoable in Godot.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "set_script_content",
-            "params": {
-                "node_path": node_path,
-                "content": content
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📝 Successfully updated script content on {node_path} ({len(content)} characters)"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to update script content on {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to set script content: {str(e)}"
+    params = {"node_path": node_path, "content": content}
+    return await _execute_command(
+        "set_script_content",
+        params,
+        lambda data: {"message": f"📝 Successfully updated script content on {node_path} ({len(content)} characters)"},
+        f"Failed to update script content on {node_path}"
+    )
 
 @app.tool()
 async def validate_script(content: str) -> str:
@@ -1071,31 +769,18 @@ async def validate_script(content: str) -> str:
     Note: This only checks syntax and basic compilation errors, not runtime logic issues.
     Use this tool before set_script_content() or add_script_to_node() to catch errors early.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "validate_script",
-            "params": {
-                "content": content
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            if data.get("valid", False):
-                return f"✅ Script validation successful ({len(content)} characters)"
-            else:
-                error = data.get("error", "Unknown validation error")
-                return f"❌ Script validation failed: {error}"
+    def success_formatter(data):
+        if data.get("valid", False):
+            return {"valid": True, "message": f"✅ Script validation successful ({len(content)} characters)"}
         else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to validate script: {error_msg}"
+            return {"valid": False, "error": data.get("error", "Unknown validation error")}
 
-    except Exception as e:
-        return f"❌ Failed to validate script: {str(e)}"
+    return await _execute_command(
+        "validate_script",
+        {"content": content},
+        success_formatter,
+        "Failed to validate script"
+    )
 
 @app.tool()
 async def create_script_file(filename: str, content: str) -> str:
@@ -1118,29 +803,13 @@ async def create_script_file(filename: str, content: str) -> str:
     Note: Files are created in the project's scripts directory. Use attach_script_to_node() to attach these files to nodes.
     The script content is validated before file creation.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "create_script_file",
-            "params": {
-                "filename": filename,
-                "content": content
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            file_path = data.get("file_path", "unknown")
-            return f"📄 Successfully created script file: {file_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to create script file {filename}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to create script file: {str(e)}"
+    params = {"filename": filename, "content": content}
+    return await _execute_command(
+        "create_script_file",
+        params,
+        lambda data: {"file_path": data.get("file_path", "unknown"), "message": f"📄 Successfully created script file: {data.get('file_path', 'unknown')}"},
+        f"Failed to create script file {filename}"
+    )
 
 @app.tool()
 async def load_script_file(file_path: str) -> str:
@@ -1161,28 +830,12 @@ async def load_script_file(file_path: str) -> str:
 
     Note: Use Godot's res:// paths for project files. This tool only reads existing files.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "load_script_file",
-            "params": {
-                "file_path": file_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            content = data.get("content", "")
-            return f"📂 Loaded script from {file_path} ({len(content)} chars):\n\n{content}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to load script file {file_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to load script file: {str(e)}"
+    return await _execute_command(
+        "load_script_file",
+        {"file_path": file_path},
+        lambda data: data,
+        f"Failed to load script file {file_path}"
+    )
 
 @app.tool()
 async def get_script_variables(node_path: str) -> str:
@@ -1191,36 +844,12 @@ async def get_script_variables(node_path: str) -> str:
     Args:
         node_path: Path to the node with the script
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_script_variables",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            variables = data.get("variables", [])
-            if not variables:
-                return f"📊 No exported variables found in script on {node_path}"
-
-            result = f"📊 Exported variables in {node_path} script:\n\n"
-            for var in variables:
-                result += f"• {var['name']} ({var['type']}): {var['value']}\n"
-            return result
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to get script variables from {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to get script variables: {str(e)}"
+    return await _execute_command(
+        "get_script_variables",
+        {"node_path": node_path},
+        lambda data: data,
+        f"Failed to get script variables from {node_path}"
+    )
 
 @app.tool()
 async def set_script_variable(node_path: str, var_name: str, value: Any) -> str:
@@ -1231,30 +860,13 @@ async def set_script_variable(node_path: str, var_name: str, value: Any) -> str:
         var_name: Name of the exported variable
         value: New value for the variable
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "set_script_variable",
-            "params": {
-                "node_path": node_path,
-                "var_name": var_name,
-                "value": value
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"🔧 Successfully set {var_name} = {value} on {node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to set script variable {var_name} on {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to set script variable: {str(e)}"
+    params = {"node_path": node_path, "var_name": var_name, "value": value}
+    return await _execute_command(
+        "set_script_variable",
+        params,
+        lambda data: {"message": f"🔧 Successfully set {var_name} = {value} on {node_path}"},
+        f"Failed to set script variable {var_name} on {node_path}"
+    )
 
 @app.tool()
 async def get_script_functions(node_path: str) -> str:
@@ -1277,37 +889,12 @@ async def get_script_functions(node_path: str) -> str:
     Note: Includes both custom methods and Godot virtual methods (_ready, _process, etc.).
     Virtual methods are marked with (virtual) and are commonly overridden.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_script_functions",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            functions = data.get("functions", [])
-            if not functions:
-                return f"⚡ No functions found in script on {node_path}"
-
-            result = f"⚡ Functions in {node_path} script:\n\n"
-            for func in functions:
-                virtual_marker = " (virtual)" if func.get("is_virtual", False) else ""
-                result += f"• {func['name']}({func['args_count']} args) → {func['return_type']}{virtual_marker}\n"
-            return result
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to get script functions from {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to get script functions: {str(e)}"
+    return await _execute_command(
+        "get_script_functions",
+        {"node_path": node_path},
+        lambda data: data,
+        f"Failed to get script functions from {node_path}"
+    )
 
 @app.tool()
 async def attach_script_to_node(node_path: str, script_path: str) -> str:
@@ -1330,29 +917,13 @@ async def attach_script_to_node(node_path: str, script_path: str) -> str:
     Note: The script file must exist and be a valid GDScript. Use create_script_file() to create reusable scripts.
     Attaching replaces any existing script on the node. Use detach_script_from_node() to remove first if needed.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "attach_script_to_node",
-            "params": {
-                "node_path": node_path,
-                "script_path": script_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📎 Successfully attached script {script_path} to {node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to attach script {script_path} to {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to attach script to node: {str(e)}"
+    params = {"node_path": node_path, "script_path": script_path}
+    return await _execute_command(
+        "attach_script_to_node",
+        params,
+        lambda data: {"message": f"📎 Successfully attached script {script_path} to {node_path}"},
+        f"Failed to attach script {script_path} to {node_path}"
+    )
 
 @app.tool()
 async def detach_script_from_node(node_path: str) -> str:
@@ -1375,28 +946,12 @@ async def detach_script_from_node(node_path: str) -> str:
     Any @export variables and custom methods will no longer be available.
     The script file itself is not deleted, only the attachment to the node.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "detach_script_from_node",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📤 Successfully detached script from {node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to detach script from {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to detach script from node: {str(e)}"
+    return await _execute_command(
+        "detach_script_from_node",
+        {"node_path": node_path},
+        lambda data: {"message": f"📤 Successfully detached script from {node_path}"},
+        f"Failed to detach script from {node_path}"
+    )
 
 @app.tool()
 async def create_resource(resource_type: str) -> str:
@@ -1420,26 +975,12 @@ async def create_resource(resource_type: str) -> str:
     Note: The resource is created in memory and can be saved to disk using save_resource().
     Use this when you need to programmatically create resources for your game.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "create_resource",
-            "params": {
-                "resource_type": resource_type
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📄 Successfully created {resource_type} resource"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to create {resource_type} resource: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to create resource: {str(e)}"
+    return await _execute_command(
+        "create_resource",
+        {"resource_type": resource_type},
+        lambda data: {"message": f"📄 Successfully created {resource_type} resource"},
+        f"Failed to create {resource_type} resource"
+    )
 
 @app.tool()
 async def load_resource(resource_path: str) -> str:
@@ -1463,28 +1004,12 @@ async def load_resource(resource_path: str) -> str:
     Note: Resources must exist in the project filesystem. Use list_directory() to explore available files.
     Loaded resources are cached by Godot for performance.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "load_resource",
-            "params": {
-                "resource_path": resource_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            resource_type = data.get("type", "Unknown")
-            return f"📂 Successfully loaded {resource_type} resource from {resource_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to load resource from {resource_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to load resource: {str(e)}"
+    return await _execute_command(
+        "load_resource",
+        {"resource_path": resource_path},
+        lambda data: {"type": data.get("type", "Unknown"), "message": f"📂 Successfully loaded {data.get('type', 'Unknown')} resource from {resource_path}"},
+        f"Failed to load resource from {resource_path}"
+    )
 
 @app.tool()
 async def save_resource(save_path: str, resource_data: Any, flags: int = 0) -> str:
@@ -1509,29 +1034,17 @@ async def save_resource(save_path: str, resource_data: Any, flags: int = 0) -> s
     Note: Use compression flag (1) for smaller file sizes, especially for large resources.
     Resources are saved in Godot's native format and can be loaded with load_resource().
     """
-    try:
-        await ensure_godot_connection()
+    params = {"resource": resource_data, "save_path": save_path, "flags": flags}
+    def success_formatter(data):
+        compression_note = " with compression" if flags & 1 else ""
+        return {"message": f"💾 Successfully saved resource to {save_path}{compression_note}"}
 
-
-        command = {
-            "type": "save_resource",
-            "params": {
-                "resource": resource_data,
-                "save_path": save_path,
-                "flags": flags
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            compression_note = " with compression" if flags & 1 else ""
-            return f"💾 Successfully saved resource to {save_path}{compression_note}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to save resource to {save_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to save resource: {str(e)}"
+    return await _execute_command(
+        "save_resource",
+        params,
+        success_formatter,
+        f"Failed to save resource to {save_path}"
+    )
 
 @app.tool()
 async def get_resource_dependencies(resource_path: str) -> str:
@@ -1555,33 +1068,12 @@ async def get_resource_dependencies(resource_path: str) -> str:
     Note: Dependencies include textures, audio, scripts, and other scenes referenced by the resource.
     This helps with asset management and optimization decisions.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_resource_dependencies",
-            "params": {
-                "resource_path": resource_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            dependencies = response.get("data", {}).get("dependencies", [])
-            if not dependencies:
-                return f"🔗 Resource {resource_path} has no dependencies"
-
-            result = f"🔗 Dependencies for {resource_path}:\n\n"
-            for dep in dependencies:
-                result += f"• {dep}\n"
-            return result
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to get dependencies for {resource_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to get resource dependencies: {str(e)}"
+    return await _execute_command(
+        "get_resource_dependencies",
+        {"resource_path": resource_path},
+        lambda data: data,
+        f"Failed to get dependencies for {resource_path}"
+    )
 
 @app.tool()
 async def list_directory(dir_path: str) -> str:
@@ -1605,36 +1097,12 @@ async def list_directory(dir_path: str) -> str:
     Note: Hidden files (starting with .) are excluded. Directories end with /.
     Use this to discover available resources before loading them.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "list_directory",
-            "params": {
-                "dir_path": dir_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            contents = response.get("data", {}).get("contents", [])
-            if not contents:
-                return f"📁 Directory {dir_path} is empty"
-
-            result = f"📁 Contents of {dir_path}:\n\n"
-            for item in contents:
-                if item.endswith("/"):
-                    result += f"📂 {item}\n"
-                else:
-                    result += f"📄 {item}\n"
-            return result
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to list directory {dir_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to list directory: {str(e)}"
+    return await _execute_command(
+        "list_directory",
+        {"dir_path": dir_path},
+        lambda data: data,
+        f"Failed to list directory {dir_path}"
+    )
 
 @app.tool()
 async def get_current_scene_info() -> str:
@@ -1652,37 +1120,12 @@ async def get_current_scene_info() -> str:
 
     Note: Requires a scene to be open in Godot editor.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_current_scene_info",
-            "params": {}
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            scene_path = data.get("scene_path", "unsaved")
-            root_type = data.get("root_node_type", "Unknown")
-            root_name = data.get("root_node_name", "Unknown")
-            child_count = data.get("child_count", 0)
-
-            result = f"🎬 Current Scene Information:\n\n"
-            result += f"📁 Scene Path: {scene_path}\n"
-            result += f"🏠 Root Node: {root_name} ({root_type})\n"
-            result += f"👶 Child Nodes: {child_count}\n"
-
-            return result
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to get scene info: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to get current scene info: {str(e)}"
+    return await _execute_command(
+        "get_current_scene_info",
+        {},
+        lambda data: data,
+        "Failed to get scene info"
+    )
 
 @app.tool()
 async def open_scene(scene_path: str) -> str:
@@ -1703,26 +1146,12 @@ async def open_scene(scene_path: str) -> str:
 
     Note: The scene file must exist and be a valid .tscn file.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "open_scene",
-            "params": {
-                "scene_path": scene_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📂 Successfully opened scene: {scene_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to open scene {scene_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to open scene: {str(e)}"
+    return await _execute_command(
+        "open_scene",
+        {"scene_path": scene_path},
+        lambda data: {"message": f"📂 Successfully opened scene: {scene_path}"},
+        f"Failed to open scene {scene_path}"
+    )
 
 @app.tool()
 async def save_scene() -> str:
@@ -1740,28 +1169,12 @@ async def save_scene() -> str:
 
     Note: Requires a scene to be open and previously saved.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "save_scene",
-            "params": {}
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            scene_path = data.get("scene_path", "unknown")
-            return f"💾 Successfully saved scene: {scene_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to save scene: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to save scene: {str(e)}"
+    return await _execute_command(
+        "save_scene",
+        {},
+        lambda data: {"message": f"💾 Successfully saved scene: {data.get('scene_path', 'unknown')}"},
+        "Failed to save scene"
+    )
 
 @app.tool()
 async def save_scene_as(scene_path: str) -> str:
@@ -1782,28 +1195,12 @@ async def save_scene_as(scene_path: str) -> str:
 
     Note: The path must end with .tscn extension.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "save_scene_as",
-            "params": {
-                "scene_path": scene_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"💾 Successfully saved scene as: {scene_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to save scene as {scene_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to save scene as: {str(e)}"
+    return await _execute_command(
+        "save_scene_as",
+        {"scene_path": scene_path},
+        lambda data: {"message": f"💾 Successfully saved scene as: {scene_path}"},
+        f"Failed to save scene as {scene_path}"
+    )
 
 @app.tool()
 async def create_new_scene(root_node_type: str = "Node2D") -> str:
@@ -1825,29 +1222,17 @@ async def create_new_scene(root_node_type: str = "Node2D") -> str:
 
     Note: The scene will be created but not saved until you use save_scene_as().
     """
-    try:
-        await ensure_godot_connection()
+    def success_formatter(data):
+        root_type = data.get("root_node_type", root_node_type)
+        root_name = data.get("root_node_name", "SceneRoot")
+        return {"message": f"🆕 Successfully created new scene with {root_type} root node named '{root_name}'"}
 
-
-        command = {
-            "type": "create_new_scene",
-            "params": {
-                "root_node_type": root_node_type
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            root_type = data.get("root_node_type", root_node_type)
-            root_name = data.get("root_node_name", "SceneRoot")
-            return f"🆕 Successfully created new scene with {root_type} root node named '{root_name}'"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to create new scene: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to create new scene: {str(e)}"
+    return await _execute_command(
+        "create_new_scene",
+        {"root_node_type": root_node_type},
+        success_formatter,
+        "Failed to create new scene"
+    )
 
 @app.tool()
 async def instantiate_scene(scene_path: str, parent_path: str = ".") -> str:
@@ -1869,32 +1254,18 @@ async def instantiate_scene(scene_path: str, parent_path: str = ".") -> str:
 
     Note: The scene file must exist and the parent node must exist in the current scene.
     """
-    try:
-        await ensure_godot_connection()
+    params = {"scene_path": scene_path, "parent_path": parent_path}
+    def success_formatter(data):
+        instance_path = data.get("instance_path", "unknown")
+        instance_name = data.get("instance_name", "unknown")
+        return {"message": f"📦 Successfully instantiated {scene_path} as '{instance_name}' at {instance_path}"}
 
-
-        command = {
-            "type": "instantiate_scene",
-            "params": {
-                "scene_path": scene_path,
-                "parent_path": parent_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            data = response.get("data", {})
-            instance_path = data.get("instance_path", "unknown")
-            instance_name = data.get("instance_name", "unknown")
-            return f"📦 Successfully instantiated {scene_path} as '{instance_name}' at {instance_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to instantiate scene {scene_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to instantiate scene: {str(e)}"
+    return await _execute_command(
+        "instantiate_scene",
+        params,
+        success_formatter,
+        f"Failed to instantiate scene {scene_path}"
+    )
 
 @app.tool()
 async def pack_scene_from_node(node_path: str, save_path: str) -> str:
@@ -1916,29 +1287,13 @@ async def pack_scene_from_node(node_path: str, save_path: str) -> str:
 
     Note: The node must exist in the current scene and save path must end with .tscn.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "pack_scene_from_node",
-            "params": {
-                "node_path": node_path,
-                "save_path": save_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📦 Successfully packed scene from {node_path} and saved to {save_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to pack scene from {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to pack scene from node: {str(e)}"
+    params = {"node_path": node_path, "save_path": save_path}
+    return await _execute_command(
+        "pack_scene_from_node",
+        params,
+        lambda data: {"message": f"📦 Successfully packed scene from {node_path} and saved to {save_path}"},
+        f"Failed to pack scene from {node_path}"
+    )
 
 @app.tool()
 async def get_resource_metadata(resource_path: str) -> str:
@@ -1961,63 +1316,12 @@ async def get_resource_metadata(resource_path: str) -> str:
     Note: Includes file size, resource type, existence status, and dependency information.
     Useful for asset management, optimization, and debugging resource issues.
     """
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "get_resource_metadata",
-            "params": {
-                "resource_path": resource_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            metadata = response.get("data", {})
-            result = f"📊 Metadata for {resource_path}:\n\n"
-            result += f"📍 Path: {metadata.get('path', 'Unknown')}\n"
-            result += f"✅ Exists: {metadata.get('exists', False)}\n"
-            result += f"🏷️ Type: {metadata.get('type', 'Unknown')}\n"
-            result += f"📏 File Size: {metadata.get('file_size', -1)} bytes\n"
-
-            dependencies = metadata.get('dependencies', [])
-            if dependencies:
-                result += f"🔗 Dependencies ({len(dependencies)}):\n"
-                for dep in dependencies:
-                    result += f"  • {dep}\n"
-            else:
-                result += "🔗 Dependencies: None\n"
-
-            return result
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            return f"❌ Failed to get metadata for {resource_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to get resource metadata: {str(e)}"
-    try:
-        await ensure_godot_connection()
-
-
-        command = {
-            "type": "detach_script_from_node",
-            "params": {
-                "node_path": node_path
-            }
-        }
-        response = await godot.send_command(command)
-
-        if response.get("status") == "success":
-            return f"📤 Successfully detached script from {node_path}"
-        else:
-            error_msg = response.get('error', 'Unknown error')
-            if error_msg == "No scene is currently open":
-                return f"❌ {error_msg}. Please open a scene in Godot editor first, then try again."
-            return f"❌ Failed to detach script from {node_path}: {error_msg}"
-
-    except Exception as e:
-        return f"❌ Failed to detach script from node: {str(e)}"
+    return await _execute_command(
+        "get_resource_metadata",
+        {"resource_path": resource_path},
+        lambda data: data,
+        f"Failed to get metadata for {resource_path}"
+    )
 
 async def ensure_godot_connection():
     """Ensure we have a connection to Godot, connecting if necessary"""

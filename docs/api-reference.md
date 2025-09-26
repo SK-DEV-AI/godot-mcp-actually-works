@@ -2,7 +2,7 @@
 
 ## Tool Categories
 
-This MCP server provides 42 specialized tools organized into logical categories for comprehensive Godot scene manipulation.
+This MCP server provides 44 specialized tools organized into logical categories for comprehensive Godot scene manipulation.
 
 ## 1. Scene Management
 

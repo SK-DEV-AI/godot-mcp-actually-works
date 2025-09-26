@@ -15,6 +15,8 @@ var debug_info := {}
 var node_utils = null
 var script_utils = null
 var scene_utils = null
+var resource_utils = null
+var _command_handlers = {}
 
 signal client_connected(id: int)
 signal client_disconnected(id: int)
@@ -47,25 +49,69 @@ func _enter_tree() -> void:
 
 	print("=== MCP Node Control Server Starting ===")
 
-	# Initialize node utilities
+	# Initialize utilities
 	node_utils = preload("res://addons/godot_mcp_node_control/node_utils.gd").new()
 	node_utils.name = "NodeUtils"
 	add_child(node_utils)
 
-	# Initialize script utilities
 	script_utils = preload("res://addons/godot_mcp_node_control/script_utils.gd").new()
 	script_utils.name = "ScriptUtils"
 	add_child(script_utils)
 
-	# Initialize scene utilities
 	scene_utils = preload("res://addons/godot_mcp_node_control/scene_utils.gd").new()
 	scene_utils.name = "SceneUtils"
 	add_child(scene_utils)
 
-	# Initialize resource utilities
-	var resource_utils = preload("res://addons/godot_mcp_node_control/resource_utils.gd").new()
+	resource_utils = preload("res://addons/godot_mcp_node_control/resource_utils.gd").new()
 	resource_utils.name = "ResourceUtils"
 	add_child(resource_utils)
+
+	# Setup command handlers
+	_command_handlers = {
+		"get_scene_tree": _handle_get_scene_tree,
+		"create_node": _handle_create_node,
+		"delete_node": _handle_delete_node,
+		"get_node_properties": _handle_get_node_properties,
+		"set_node_property": _handle_set_node_property,
+		"move_node": _handle_move_node,
+		"duplicate_node": _handle_duplicate_node,
+		"set_node_transform": _handle_set_node_transform,
+		"set_node_visibility": _handle_set_node_visibility,
+		"connect_signal": _handle_connect_signal,
+		"disconnect_signal": _handle_disconnect_signal,
+		"get_node_signals": _handle_get_node_signals,
+		"get_node_methods": _handle_get_node_methods,
+		"call_node_method": _handle_call_node_method,
+		"find_nodes_by_type": _handle_find_nodes_by_type,
+		"get_node_children": _handle_get_node_children,
+		"add_script_to_node": _handle_add_script_to_node,
+		"get_debug_info": _handle_get_debug_info,
+		"run_scene": _handle_run_scene,
+		"stop_scene": _handle_stop_scene,
+		"get_script_content": _handle_get_script_content,
+		"set_script_content": _handle_set_script_content,
+		"validate_script": _handle_validate_script,
+		"create_script_file": _handle_create_script_file,
+		"load_script_file": _handle_load_script_file,
+		"get_script_variables": _handle_get_script_variables,
+		"set_script_variable": _handle_set_script_variable,
+		"get_script_functions": _handle_get_script_functions,
+		"attach_script_to_node": _handle_attach_script_to_node,
+		"detach_script_from_node": _handle_detach_script_from_node,
+		"create_resource": _handle_create_resource,
+		"load_resource": _handle_load_resource,
+		"save_resource": _handle_save_resource,
+		"get_resource_dependencies": _handle_get_resource_dependencies,
+		"list_directory": _handle_list_directory,
+		"get_resource_metadata": _handle_get_resource_metadata,
+		"get_current_scene_info": _handle_get_current_scene_info,
+		"open_scene": _handle_open_scene,
+		"save_scene": _handle_save_scene,
+		"save_scene_as": _handle_save_scene_as,
+		"create_new_scene": _handle_create_new_scene,
+		"instantiate_scene": _handle_instantiate_scene,
+		"pack_scene_from_node": _handle_pack_scene_from_node,
+	}
 
 	# Connect signals
 	command_received.connect(_handle_command)
@@ -235,98 +281,17 @@ func _handle_command(client_id: int, command: Dictionary) -> void:
 		var cmd_type = command.get("type")
 		var params = command.get("params", {})
 
-		match cmd_type:
-			"get_scene_tree":
-				response = _handle_get_scene_tree()
-			"create_node":
-				response = _handle_create_node(params)
-			"delete_node":
-				response = _handle_delete_node(params)
-			"get_node_properties":
-				response = _handle_get_node_properties(params)
-			"set_node_property":
-				response = _handle_set_node_property(params)
-			"move_node":
-				response = _handle_move_node(params)
-			"duplicate_node":
-				response = _handle_duplicate_node(params)
-			"set_node_transform":
-				response = _handle_set_node_transform(params)
-			"set_node_visibility":
-				response = _handle_set_node_visibility(params)
-			"connect_signal":
-				response = _handle_connect_signal(params)
-			"disconnect_signal":
-				response = _handle_disconnect_signal(params)
-			"get_node_signals":
-				response = _handle_get_node_signals(params)
-			"get_node_methods":
-				response = _handle_get_node_methods(params)
-			"call_node_method":
-				response = _handle_call_node_method(params)
-			"find_nodes_by_type":
-				response = _handle_find_nodes_by_type(params)
-			"get_node_children":
-				response = _handle_get_node_children(params)
-			"add_script_to_node":
-				response = _handle_add_script_to_node(params)
-			"get_debug_info":
-				response = _handle_get_debug_info()
-			"run_scene":
-				response = _handle_run_scene()
-			"stop_scene":
-				response = _handle_stop_scene()
-			"get_script_content":
-				response = _handle_get_script_content(params)
-			"set_script_content":
-				response = _handle_set_script_content(params)
-			"validate_script":
-				response = _handle_validate_script(params)
-			"create_script_file":
-				response = _handle_create_script_file(params)
-			"load_script_file":
-				response = _handle_load_script_file(params)
-			"get_script_variables":
-				response = _handle_get_script_variables(params)
-			"set_script_variable":
-				response = _handle_set_script_variable(params)
-			"get_script_functions":
-				response = _handle_get_script_functions(params)
-			"attach_script_to_node":
-				response = _handle_attach_script_to_node(params)
-			"detach_script_from_node":
-				response = _handle_detach_script_from_node(params)
-			"create_resource":
-				response = _handle_create_resource(params)
-			"load_resource":
-				response = _handle_load_resource(params)
-			"save_resource":
-				response = _handle_save_resource(params)
-			"get_resource_dependencies":
-				response = _handle_get_resource_dependencies(params)
-			"list_directory":
-				response = _handle_list_directory(params)
-			"get_resource_metadata":
-				response = _handle_get_resource_metadata(params)
-			"get_current_scene_info":
-				response = _handle_get_current_scene_info()
-			"open_scene":
-				response = _handle_open_scene(params)
-			"save_scene":
-				response = _handle_save_scene()
-			"save_scene_as":
-				response = _handle_save_scene_as(params)
-			"create_new_scene":
-				response = _handle_create_new_scene(params)
-			"instantiate_scene":
-				response = _handle_instantiate_scene(params)
-			"pack_scene_from_node":
-				response = _handle_pack_scene_from_node(params)
-			_:
-				response = {
-					"status": "error",
-					"error": "Unknown command type: %s" % cmd_type
-				}
+		if _command_handlers.has(cmd_type):
+			var handler = _command_handlers[cmd_type]
+			if handler.get_argument_count() > 0:
+				response = handler.call(params)
+			else:
+				response = handler.call()
+		else:
+			response = {
+				"status": "error",
+				"error": "Unknown command type: %s" % cmd_type
+			}
 	else:
 		response = {
 			"status": "error",
@@ -714,7 +679,6 @@ func _handle_create_resource(params: Dictionary) -> Dictionary:
 	if resource_type.is_empty():
 		return {"status": "error", "error": "resource_type is required"}
 
-	var resource_utils = get_node("ResourceUtils")
 	var result = resource_utils.create_resource(resource_type)
 	if result.has("error"):
 		return {"status": "error", "error": result.error}
@@ -725,7 +689,6 @@ func _handle_load_resource(params: Dictionary) -> Dictionary:
 	if resource_path.is_empty():
 		return {"status": "error", "error": "resource_path is required"}
 
-	var resource_utils = get_node("ResourceUtils")
 	var result = resource_utils.load_resource(resource_path)
 	if result.has("error"):
 		return {"status": "error", "error": result.error}
@@ -739,7 +702,6 @@ func _handle_save_resource(params: Dictionary) -> Dictionary:
 	if resource == null or save_path.is_empty():
 		return {"status": "error", "error": "resource and save_path are required"}
 
-	var resource_utils = get_node("ResourceUtils")
 	var result = resource_utils.save_resource(resource, save_path, flags)
 	if result.has("error"):
 		return {"status": "error", "error": result.error}
@@ -750,7 +712,6 @@ func _handle_get_resource_dependencies(params: Dictionary) -> Dictionary:
 	if resource_path.is_empty():
 		return {"status": "error", "error": "resource_path is required"}
 
-	var resource_utils = get_node("ResourceUtils")
 	var result = resource_utils.get_resource_dependencies(resource_path)
 	if result.has("error"):
 		return {"status": "error", "error": result.error}
@@ -761,7 +722,6 @@ func _handle_list_directory(params: Dictionary) -> Dictionary:
 	if dir_path.is_empty():
 		return {"status": "error", "error": "dir_path is required"}
 
-	var resource_utils = get_node("ResourceUtils")
 	var result = resource_utils.list_directory(dir_path)
 	if result.has("error"):
 		return {"status": "error", "error": result.error}
@@ -772,7 +732,6 @@ func _handle_get_resource_metadata(params: Dictionary) -> Dictionary:
 	if resource_path.is_empty():
 		return {"status": "error", "error": "resource_path is required"}
 
-	var resource_utils = get_node("ResourceUtils")
 	var result = resource_utils.get_resource_metadata(resource_path)
 	return {"status": "success", "data": result}
 
