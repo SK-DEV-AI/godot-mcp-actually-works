@@ -439,8 +439,8 @@ async def connect_signal(from_node_path: str, signal_name: str, to_node_path: st
     - "Connect Timer's 'timeout' signal to 'spawn_enemy' method"
     - "Link Button's 'button_down' to 'play_sound' on AudioPlayer"
 
-    Note: Use get_node_signals() first to see available signals on a node.
-    The target method must exist and be properly defined in the receiving node's script.
+    Note: Use get_node_signals() first to see available signals on a node. The target method must exist.
+    **Warning: This operation is not undoable in the Godot editor.**
     """
     params = {
         "from_node_path": from_node_path,
@@ -467,6 +467,9 @@ async def disconnect_signal(from_node_path: str, signal_name: str, to_node_path:
         signal_name: Name of the signal
         to_node_path: Path to the node that receives the signal
         method_name: Name of the method
+
+    Note:
+        **Warning: This operation is not undoable in the Godot editor.**
     """
     params = {
         "from_node_path": from_node_path,
@@ -802,6 +805,7 @@ async def create_script_file(filename: str, content: str) -> str:
 
     Note: Files are created in the project's scripts directory. Use attach_script_to_node() to attach these files to nodes.
     The script content is validated before file creation.
+    **Warning: This is a file system operation and cannot be undone.**
     """
     params = {"filename": filename, "content": content}
     return await _execute_command(
@@ -1033,6 +1037,7 @@ async def save_resource(save_path: str, resource_data: Any, flags: int = 0) -> s
 
     Note: Use compression flag (1) for smaller file sizes, especially for large resources.
     Resources are saved in Godot's native format and can be loaded with load_resource().
+    **Warning: This is a file system operation and cannot be undone.**
     """
     params = {"resource": resource_data, "save_path": save_path, "flags": flags}
     def success_formatter(data):
@@ -1168,6 +1173,7 @@ async def save_scene() -> str:
         - "Commit the scene changes"
 
     Note: Requires a scene to be open and previously saved.
+    **Warning: This is a file system operation and cannot be undone.**
     """
     return await _execute_command(
         "save_scene",
@@ -1194,6 +1200,7 @@ async def save_scene_as(scene_path: str) -> str:
         - "Export scene to res://exports/level1.tscn"
 
     Note: The path must end with .tscn extension.
+    **Warning: This is a file system operation and cannot be undone.**
     """
     return await _execute_command(
         "save_scene_as",
@@ -1204,28 +1211,31 @@ async def save_scene_as(scene_path: str) -> str:
 
 @app.tool()
 async def create_new_scene(root_node_type: str = "Node2D") -> str:
-    """Create a new empty scene with specified root node type.
+    """Creates and opens a new, unsaved scene in the Godot editor.
 
-    This tool creates a new scene in the Godot editor with the specified
-    root node type, allowing you to start building a scene from scratch.
+    This tool creates a new scene with the specified root node, making it the active scene
+    in the editor. This new scene is unsaved and has no file path. Use the 'save_scene_as'
+    tool to save it to a .tscn file.
 
     Args:
-        root_node_type: Type of root node for the new scene (default: "Node2D")
-                        Common options: "Node2D", "Node3D", "Control", "Node"
+        root_node_type: The class name of the root node for the new scene.
+                        Common options: "Node2D", "Node3D", "Control", "Node".
+                        Defaults to "Node2D".
 
-    Returns: Success confirmation with root node details
+    Returns: A JSON object confirming the creation of the new scene.
 
     Examples:
         - "Create a new 2D scene"
         - "Start a new 3D scene with Node3D root"
-        - "Create a new UI scene with Control root"
+        - "Create a new UI scene with Control root, then save it as main_menu.tscn"
 
-    Note: The scene will be created but not saved until you use save_scene_as().
+    Note: This action leaves the editor with an unsaved scene. Subsequent operations
+    can be performed on this scene, but it must be saved with 'save_scene_as' to persist.
     """
     def success_formatter(data):
         root_type = data.get("root_node_type", root_node_type)
         root_name = data.get("root_node_name", "SceneRoot")
-        return {"message": f"🆕 Successfully created new scene with {root_type} root node named '{root_name}'"}
+        return {"message": f"🆕 Successfully created a new unsaved scene with '{root_name}' ({root_type}) as the root. Use save_scene_as() to save it."}
 
     return await _execute_command(
         "create_new_scene",
