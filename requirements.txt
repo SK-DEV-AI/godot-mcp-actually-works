@@ -1,0 +1,4 @@
+fastmcp>=0.9.0
+websockets>=12.0
+asyncio
+logging
