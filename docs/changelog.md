@@ -5,6 +5,144 @@ All notable changes to the Godot MCP Node Control project will be documented in 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2025-09-26
+
+### 🚀 Animation System Tools Release
+
+**Complete Godot AnimationPlayer integration** - Added comprehensive animation creation, playback control, and keyframe manipulation capabilities for advanced AI-assisted game development.
+
+#### ✨ Added
+
+##### Animation System Tools (16 New Tools)
+
+###### AnimationPlayer Management
+- `create_animation_player()` - Create AnimationPlayer nodes with full undo support
+- `get_animation_player_info()` - Get player state and properties for debugging
+- `set_animation_player_property()` - Configure player settings (autoplay, speed, blend times)
+- `remove_animation_player()` - Delete animation players safely
+
+###### Animation Playback Control
+- `play_animation()` - Start animation playback with custom blend times and speed
+- `pause_animation()` - Pause current animation at current frame
+- `stop_animation()` - Stop animation with optional state preservation
+- `seek_animation()` - Jump to specific time positions in animations
+- `queue_animation()` - Add animations to sequential playback queue
+- `clear_animation_queue()` - Remove all queued animations
+- `get_animation_state()` - Get real-time playback information
+- `set_animation_speed()` - Control playback speed multiplier
+
+###### Animation Library Management
+- `create_animation_library()` - Organize animations in named libraries
+- `load_animation_library()` - Import animation libraries from files
+- `add_animation_to_library()` - Add animations to existing libraries
+- `remove_animation_from_library()` - Remove animations from libraries
+- `get_animation_library_list()` - List all animations in all libraries
+- `rename_animation()` - Rename animations with reference updates
+
+###### Animation Creation & Editing
+- `create_animation()` - Create new empty animations with custom duration
+- `get_animation_info()` - Get detailed animation metadata and properties
+- `set_animation_property()` - Configure animation properties (length, loop mode, step)
+- `add_animation_track()` - Add tracks for different property types (position, rotation, scale, etc.)
+- `remove_animation_track()` - Remove tracks from animations
+- `insert_keyframe()` - Add keyframes at specific times with custom values
+- `remove_keyframe()` - Remove keyframes from animation tracks
+- `get_animation_tracks()` - Get detailed track information and keyframe data
+
+###### Advanced Animation Features
+- `set_blend_time()` - Set smooth transition times between animations
+- `get_blend_time()` - Get current blend time settings
+- `set_animation_next()` - Chain animations for automatic sequential playback
+- `get_animation_next()` - Get animation chain information
+- `set_animation_section()` - Play only portions of animations
+- `set_animation_section_with_markers()` - Use named markers for precise section control
+- `add_animation_marker()` - Add named markers at specific animation times
+- `remove_animation_marker()` - Remove animation markers
+
+#### 🔧 Technical Enhancements
+
+##### Animation Utilities Module
+- **New `animation_utils.gd`**: Dedicated animation manipulation and control utilities
+- **AnimationPlayer Integration**: Full access to Godot's AnimationPlayer APIs
+- **Keyframe System**: Complete keyframe creation, editing, and management
+- **Animation Library Support**: Advanced animation organization and reuse
+- **Track System**: Support for all Godot animation track types
+- **Marker System**: Named animation markers for precise control
+
+##### Enhanced Animation Handling
+- **Real-time Playback Control**: Live animation manipulation during playback
+- **Undo/Redo Support**: All animation operations are fully reversible
+- **Type Safety**: Proper Godot animation type validation and casting
+- **Performance Optimization**: Efficient animation data handling and caching
+- **Error Recovery**: Comprehensive error handling for animation operations
+
+##### Advanced Features
+- **Blend Time Management**: Smooth transitions between animations
+- **Animation Queuing**: Sequential animation playback with queue management
+- **Section Playback**: Precise control over animation playback ranges
+- **Marker-based Navigation**: Named points for animation synchronization
+- **Library Organization**: Hierarchical animation management and reuse
+
+#### 📚 Documentation Updates
+
+##### API Reference Expansion
+- **42 Total Tools**: Updated from 26 to 42 tools
+- **Animation System Section**: Complete documentation for all new tools
+- **Animation Examples**: Practical examples for animation workflows
+- **Godot Animation Concepts**: Comprehensive coverage of AnimationPlayer features
+
+##### Enhanced Examples
+- **Animation Creation**: Complete animation setup and keyframe workflows
+- **Playback Control**: Advanced animation playback and timing control
+- **Library Management**: Animation organization and reuse patterns
+- **Keyframe Editing**: Precise animation curve manipulation techniques
+
+#### 🧪 Testing & Validation
+
+##### Animation Tool Testing
+- **Unit Tests**: Comprehensive test coverage for all animation operations
+- **Animation Validation**: Godot AnimationPlayer API compliance verification
+- **Integration Testing**: End-to-end animation creation and playback workflows
+
+##### Quality Assurance
+- **Error Scenario Coverage**: Extensive testing of animation operation failures
+- **Performance Benchmarking**: Animation operation timing and memory usage
+- **Keyframe Precision**: Accurate keyframe timing and value validation
+
+#### 🎯 Key Achievements
+
+##### Complete Animation System Integration
+- **Full AnimationPlayer API**: Complete access to Godot's animation system
+- **Keyframe Animation**: Professional keyframe-based animation creation
+- **Real-time Control**: Live animation manipulation and playback control
+- **Library System**: Advanced animation organization and management
+- **Marker System**: Precise animation synchronization and control
+
+##### Developer Experience
+- **Intuitive Animation API**: Natural language commands for animation operations
+- **Rich Animation Feedback**: Detailed success/error messages with context
+- **Visual Animation Tools**: Animation-aware operations with proper feedback
+
+##### AI Optimization
+- **Animation Context Engineering**: Optimized descriptions for LLM animation understanding
+- **Progressive Animation Complexity**: Layered information for different animation expertise levels
+- **Animation Error Recovery**: Clear guidance for fixing animation-related issues
+
+---
+
+**Release Notes**: Version 1.4.0 introduces comprehensive animation system capabilities, expanding the MCP server from 26 to 42 tools. This release enables AI assistants to fully control Godot's AnimationPlayer system, providing complete animation creation, playback control, and keyframe manipulation through natural language commands.
+
+**Compatibility**: Maintains full backward compatibility with v1.0.0, v1.1.0, v1.2.0, and v1.3.0. All existing tools and functionality preserved.
+
+**New Capabilities**:
+- Complete Godot AnimationPlayer manipulation through natural language
+- Real-time animation playback control and synchronization
+- Professional keyframe animation creation and editing
+- Animation library organization and management
+- Advanced animation features (blend times, markers, sections, queuing)
+
+---
+
 ## [1.3.0] - 2025-09-26
 
 ### 🚀 Scene Management Tools Release

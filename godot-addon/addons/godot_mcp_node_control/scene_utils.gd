@@ -50,9 +50,7 @@ func open_scene(scene_path: String) -> Dictionary:
 	if not scene_path.ends_with(".tscn"):
 		return {"error": "Invalid scene file extension. Must be .tscn"}
 
-	var err = editor_interface.open_scene_from_path(scene_path)
-	if err != OK:
-		return {"error": "Failed to open scene: %s" % error_string(err)}
+	editor_interface.open_scene_from_path(scene_path)
 
 	return {"success": true, "scene_path": scene_path}
 
@@ -108,7 +106,7 @@ func save_scene_as(scene_path: String) -> Dictionary:
 	return {"success": true, "scene_path": scene_path}
 
 func create_new_scene(root_node_type: String = "Node2D") -> Dictionary:
-	"""Create a new empty scene with specified root node type"""
+	"""Create a new empty scene with a specified root node type and open it in the editor."""
 	var error_msg = _validate_editor_access()
 	if error_msg:
 		return {"error": error_msg}
@@ -116,17 +114,42 @@ func create_new_scene(root_node_type: String = "Node2D") -> Dictionary:
 	if not ClassDB.class_exists(root_node_type):
 		return {"error": "Invalid node type: %s" % root_node_type}
 
-	# Create new root node
+	# 1. Create the root node in memory
 	var root_node = ClassDB.instantiate(root_node_type)
-	root_node.name = "SceneRoot"
+	if not root_node:
+		return {"error": "Failed to instantiate root node of type: %s" % root_node_type}
+	root_node.name = root_node_type
 
-	# Set as the edited scene
-	editor_interface.edit_node(root_node)
+	# 2. Pack the node into a PackedScene
+	var packed_scene = PackedScene.new()
+	packed_scene.pack(root_node)
+
+	# 3. Save to a temporary file
+	var temp_scene_path = "res://.mcp_temp_scene.tscn"
+	var save_err = ResourceSaver.save(packed_scene, temp_scene_path)
+	if save_err != OK:
+		root_node.free() # Clean up the node
+		return {"error": "Failed to save temporary scene: %s" % error_string(save_err)}
+
+	# 4. Open the temporary scene in the editor
+	editor_interface.open_scene_from_path(temp_scene_path)
+
+	# 5. Clean up the temporary file
+	var dir_access = DirAccess.open("res://")
+	if dir_access:
+		dir_access.remove(temp_scene_path)
+
+	# After opening, the editor's scene root is the new node.
+	# We need to clear its scene_file_path to make it an "unsaved" scene.
+	var new_root = editor_interface.get_edited_scene_root()
+	if new_root:
+		new_root.scene_file_path = ""
 
 	return {
 		"success": true,
 		"root_node_type": root_node_type,
-		"root_node_name": root_node.name
+		"root_node_name": root_node.name,
+		"message": "Successfully created a new unsaved scene. Use save_scene_as() to save it to a file."
 	}
 
 func instantiate_scene(scene_path: String, parent_path: String = ".") -> Dictionary:

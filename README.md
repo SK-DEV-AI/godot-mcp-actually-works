@@ -28,7 +28,7 @@ Communication happens via WebSocket between the Python MCP server and the GDScri
 ## 📊 **Current Status & Roadmap**
 
 ### ✅ **Phase 1 Complete: Node Control System**
-- **42 Tools Implemented**: Complete node manipulation and scene management toolkit
+- **44 Tools Implemented**: Complete node manipulation and scene management toolkit
 - **Error Transparency**: Exact Godot error messages relayed to LLMs
 - **Production Ready**: Tested, documented, and polished
 - **Architecture Proven**: Modular design ready for expansion

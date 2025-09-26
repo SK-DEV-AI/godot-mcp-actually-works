@@ -101,10 +101,6 @@ func create_node(node_type: String, parent_path: String = ".", node_name: String
 		if current_parent:
 			current_parent.remove_child(new_node)
 
-	# Add to scene
-	parent_node.add_child(new_node)
-	new_node.owner = root  # Ensure it's saved with the scene
-
 	# Make the change undoable
 	var undo_redo = editor_interface.get_editor_undo_redo()
 	undo_redo.create_action("Create Node: %s" % node_name)
@@ -383,10 +379,6 @@ func duplicate_node(node_path: String, new_name: String = "") -> Dictionary:
 	if new_name.is_empty():
 		new_name = "%s_duplicate" % node.name
 	duplicate.name = new_name
-
-	# Add to scene
-	parent.add_child(duplicate)
-	duplicate.owner = root
 
 	# Make undoable
 	var undo_redo = editor_interface.get_editor_undo_redo()
