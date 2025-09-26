@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3 uid="uid://bpf7tw8epndbg"]
+
+[sub_resource type="GDScript" id="GDScript_6adnx"]
+script/source = "extends Sprite2D
+
+func _ready():
+	print(\"Player sprite ready!\")
+
+func _process(delta):
+	# Simple movement
+	if Input.is_action_pressed(\"ui_right\"):
+		position.x += 100 * delta
+	elif Input.is_action_pressed(\"ui_left\"):
+		position.x -= 100 * delta"
+
+[node name="Node2D" type="Node2D"]
+
+[node name="PlayerSprite" type="Sprite2D" parent="."]
+position = Vector2(100, 200)
+script = SubResource("GDScript_6adnx")

@@ -1,0 +1,73 @@
+{
+  "mcpServers": {
+    "GODOT-MCP": {
+      "command": "/home/sk/godot-mcp-actually-works/venv/bin/python",
+      "args": [
+        "/home/sk/godot-mcp-actually-works/godot-mcp-server.py"
+      ],
+      "env": {
+        "GODOT_HOST": "localhost",
+        "GODOT_PORT": "9080"
+      },
+      "disabled": false,
+      "alwaysAllow": [
+        "get_scene_tree",
+        "create_node",
+        "delete_node",
+        "get_node_properties",
+        "set_node_property",
+        "move_node",
+        "duplicate_node",
+        "set_node_transform",
+        "connect_signal",
+        "set_node_visibility",
+        "disconnect_signal",
+        "get_node_signals",
+        "get_node_methods",
+        "call_node_method",
+        "add_script_to_node",
+        "get_node_children",
+        "find_nodes_by_type",
+        "get_debug_info",
+        "check_connection",
+        "run_scene",
+        "stop_scene",
+        "get_script_content",
+        "validate_script",
+        "create_script_file",
+        "get_resource_metadata",
+        "pack_scene_from_node",
+        "instantiate_scene",
+        "create_new_scene",
+        "set_script_content",
+        "set_script_variable",
+        "get_script_functions",
+        "get_script_variables",
+        "load_script_file",
+        "attach_script_to_node",
+        "detach_script_from_node",
+        "create_resource",
+        "load_resource",
+        "save_resource",
+        "get_resource_dependencies",
+        "get_current_scene_info",
+        "open_scene",
+        "list_directory",
+        "save_scene_as",
+        "save_scene"
+      ]
+    },
+    "exa": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.exa.ai/mcp"
+      ],
+      "alwaysAllow": [
+        "web_search_exa",
+        "get_code_context_exa"
+      ]
+    }
+  }
+}
