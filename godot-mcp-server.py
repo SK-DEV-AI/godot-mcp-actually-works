@@ -208,7 +208,7 @@ async def get_scene_tree() -> str:
     )
 
 @app.tool()
-async def create_node(node_type: str, parent_path: str = ".", node_name: str = "") -> str:
+async def create_node(node_type: str, parent_path: str = ".", node_name: str = "", shape_type: str = "", shape_properties: Dict[str, Any] = None) -> str:
     """Create a new node in the Godot scene with full undo support.
 
     This tool creates any valid Godot node type and adds it to the scene hierarchy.
@@ -220,26 +220,65 @@ async def create_node(node_type: str, parent_path: str = ".", node_name: str = "
         parent_path: Path to parent node (default: "." for scene root)
                      Use paths like "Player", "UI/CanvasLayer", or "Enemies/Enemy1"
         node_name: Custom name for the node (optional - auto-generated if empty)
+        shape_type: For CollisionShape2D/CollisionShape3D nodes, the shape type to create (optional)
+                   2D Shapes:
+                   - "RectangleShape2D": Rectangle collision shape (default for CollisionShape2D)
+                   - "CircleShape2D": Circular collision shape
+                   - "CapsuleShape2D": Capsule collision shape
+                   - "ConvexPolygonShape2D": Convex polygon collision shape
+                   - "ConcavePolygonShape2D": Concave polygon collision shape
+                   - "WorldBoundaryShape2D": World boundary collision shape
+                   - "SeparationRayShape2D": Separation ray collision shape
+                   - "SegmentShape2D": Line segment collision shape
+                   3D Shapes:
+                   - "BoxShape3D": Box collision shape (default for CollisionShape3D)
+                   - "SphereShape3D": Spherical collision shape
+                   - "CapsuleShape3D": Capsule collision shape
+                   - "CylinderShape3D": Cylinder collision shape
+                   - "ConvexPolygonShape3D": Convex polygon collision shape
+                   - "ConcavePolygonShape3D": Concave polygon collision shape
+                   - "HeightMapShape3D": Height map collision shape
+                   - "WorldBoundaryShape3D": World boundary collision shape
+        shape_properties: Properties for the shape (optional)
+                         2D Shapes:
+                         - RectangleShape2D: {"size": [width, height]} (default: [32, 32])
+                         - CircleShape2D: {"radius": radius} (default: 16)
+                         - CapsuleShape2D: {"radius": radius, "height": height} (default: 16, 32)
+                         - ConvexPolygonShape2D: {"points": [[x1,y1], [x2,y2], ...]}
+                         - ConcavePolygonShape2D: {"segments": [[x1,y1], [x2,y2], ...]}
+                         3D Shapes:
+                         - BoxShape3D: {"size": [width, height, depth]} (default: [2, 2, 2])
+                         - SphereShape3D: {"radius": radius} (default: 1)
+                         - CapsuleShape3D: {"radius": radius, "height": height} (default: 1, 2)
+                         - CylinderShape3D: {"radius": radius, "height": height} (default: 1, 2)
+                         - ConvexPolygonShape3D: {"points": [[x1,y1,z1], [x2,y2,z2], ...]}
+                         - HeightMapShape3D: {"map_width": width, "map_depth": depth, "map_data": [heights...]}
 
     Returns: Success message with the created node's path
 
     Examples:
     - "Create a Sprite2D node as a child of the Player node"
-    - "Add a CollisionShape2D to my Area2D node"
+    - "Add a CollisionShape2D with RectangleShape2D size 64x64 to my Area2D node"
     - "Create a new Label node in the UI canvas"
     - "Add a CharacterBody2D for the player character"
+    - "Create a CollisionShape2D with CircleShape2D radius 20"
 
     Note: All changes are undoable in Godot's editor.
     """
     params = {
         "node_type": node_type,
         "parent_path": parent_path,
-        "node_name": node_name
+        "node_name": node_name,
+        "shape_type": shape_type,
+        "shape_properties": shape_properties or {}
     }
     def success_formatter(data):
         node_path = data.get('node_path', 'Unknown')
         node_name_created = data.get('node_name', node_type)
-        return {"message": f"✅ Created {node_type} node '{node_name_created}' at path: {node_path}"}
+        shape_info = ""
+        if shape_type:
+            shape_info = f" with {shape_type}"
+        return {"message": f"✅ Created {node_type} node '{node_name_created}'{shape_info} at path: {node_path}"}
 
     return await _execute_command(
         "create_node",
@@ -316,7 +355,7 @@ async def set_node_property(node_path: str, property_name: str, value: Any) -> s
     return await _execute_command(
         "set_node_property",
         params,
-        lambda data: {"message": f"✅ Set {property_name} = {value} on node {node_path}"},
+        lambda data: {"message": f"✅ Set {property_name} on node {node_path}"},
         f"Failed to set {property_name} on {node_path}"
     )
 
@@ -400,6 +439,43 @@ async def set_node_transform(node_path: str, position: List[float] = None, rotat
         params,
         success_formatter,
         f"Failed to set transform on {node_path}"
+    )
+
+@app.tool()
+async def change_collision_shape(node_path: str, shape_type: str, shape_properties: Dict[str, Any] = None) -> str:
+    """Change the collision shape of an existing CollisionShape2D or CollisionShape3D node.
+
+    This tool allows you to modify the shape resource of existing collision shape nodes,
+    changing from one shape type to another or modifying the properties of the current shape.
+
+    Args:
+        node_path: Path to the CollisionShape2D or CollisionShape3D node to modify
+        shape_type: New shape type to assign:
+                    2D Shapes: RectangleShape2D, CircleShape2D, CapsuleShape2D, ConvexPolygonShape2D,
+                              ConcavePolygonShape2D, WorldBoundaryShape2D, SeparationRayShape2D, SegmentShape2D
+                    3D Shapes: BoxShape3D, SphereShape3D, CapsuleShape3D, CylinderShape3D, ConvexPolygonShape3D,
+                              ConcavePolygonShape3D, HeightMapShape3D, WorldBoundaryShape3D
+        shape_properties: Properties for the new shape (same format as create_node)
+
+    Returns: Success confirmation with shape change details
+
+    Examples:
+        - "Change DefaultRectShape to a circle with radius 25"
+        - "Convert PlayerShape to a capsule with radius 8 and height 16"
+        - "Update PlatformShape to a larger rectangle [300, 40]"
+
+    Note: This completely replaces the existing shape resource with a new one.
+    """
+    params = {
+        "node_path": node_path,
+        "shape_type": shape_type,
+        "shape_properties": shape_properties or {}
+    }
+    return await _execute_command(
+        "change_collision_shape",
+        params,
+        lambda data: {"message": f"🔄 Changed {node_path} to {shape_type} shape"},
+        f"Failed to change collision shape on {node_path}"
     )
 
 @app.tool()
@@ -2537,6 +2613,7 @@ async def remove_animation_marker(player_path: str, animation_name: str, marker_
         lambda data: {"message": f"🗑️ Removed marker '{marker_name}' from '{animation_name}'"},
         f"Failed to remove marker '{marker_name}' from animation '{animation_name}'"
     )
+
 
 async def ensure_godot_connection():
     """Ensure we have a connection to Godot, connecting if necessary"""

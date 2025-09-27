@@ -59,7 +59,7 @@ func _build_node_tree(node: Node, depth: int = 0) -> Dictionary:
 
 	return node_data
 
-func create_node(node_type: String, parent_path: String = ".", node_name: String = "") -> Dictionary:
+func create_node(node_type: String, parent_path: String = ".", node_name: String = "", shape_type: String = "", shape_properties: Dictionary = {}) -> Dictionary:
 	"""Create a new node in the scene"""
 	var error_msg = _validate_editor_access()
 	if error_msg:
@@ -101,13 +101,27 @@ func create_node(node_type: String, parent_path: String = ".", node_name: String
 		if current_parent:
 			current_parent.remove_child(new_node)
 
+	# Special handling for CollisionShape2D/CollisionShape3D - create the specified shape
+	var shape = null
+	if node_type == "CollisionShape2D" or node_type == "CollisionShape3D":
+		shape = _create_collision_shape(shape_type, shape_properties, node_type)
+
 	# Make the change undoable
 	var undo_redo = editor_interface.get_editor_undo_redo()
 	undo_redo.create_action("Create Node: %s" % node_name)
 	undo_redo.add_do_method(parent_node, "add_child", new_node)
 	undo_redo.add_do_property(new_node, "owner", root)
+
+	# If we created a shape for CollisionShape2D, make that undoable too
+	if shape:
+		undo_redo.add_do_property(new_node, "shape", shape)
+
 	undo_redo.add_undo_method(parent_node, "remove_child", new_node)
 	undo_redo.commit_action()
+
+	# Set the shape after undo/redo (since shapes aren't easily undoable)
+	if shape:
+		new_node.shape = shape
 
 	return {
 		"node_path": str(new_node.get_path()),
@@ -215,16 +229,19 @@ func set_node_property(node_path: String, property_name: String, value) -> Dicti
 	if not node.get_property_list().any(func(p): return p.name == property_name):
 		return {"error": "Property not found: %s" % property_name}
 
+	# Convert value to proper Godot type
+	var converted_value = _convert_node_property_value(value, property_name)
+
 	# Get current value for undo
 	var old_value = node.get(property_name)
 
 	# Set the new value
-	node.set(property_name, value)
+	node.set(property_name, converted_value)
 
 	# Make undoable
 	var undo_redo = editor_interface.get_editor_undo_redo()
 	undo_redo.create_action("Set Property: %s.%s" % [node_path, property_name])
-	undo_redo.add_do_property(node, property_name, value)
+	undo_redo.add_do_property(node, property_name, converted_value)
 	undo_redo.add_undo_property(node, property_name, old_value)
 	undo_redo.commit_action()
 
@@ -436,6 +453,49 @@ func set_node_transform(node_path: String, position = null, rotation = null, sca
 		undo_redo.add_undo_property(node, "scale", old_scale)
 
 	undo_redo.commit_action()
+	return {"success": true}
+
+func change_collision_shape(node_path: String, shape_type: String, shape_properties: Dictionary = {}) -> Dictionary:
+	"""Change the collision shape of an existing CollisionShape node"""
+	var error_msg = _validate_editor_access()
+	if error_msg:
+		return {"error": error_msg}
+
+	var root = editor_interface.get_edited_scene_root()
+	if not root:
+		return {"error": "No scene is currently open"}
+
+	# Check if this is an editor UI scene (not a user scene)
+	if root.name.begins_with("@") or root.name.contains("Editor"):
+		return {"error": "No user scene is currently open. Please open a scene in the Godot editor."}
+
+	var node = root.get_node_or_null(node_path)
+	if not node:
+		return {"error": "Node not found: %s" % node_path}
+
+	# Check if it's a collision shape node
+	if not (node is CollisionShape2D or node is CollisionShape3D):
+		return {"error": "Node must be CollisionShape2D or CollisionShape3D: %s" % node_path}
+
+	# Create the new shape
+	var node_type = "CollisionShape2D" if node is CollisionShape2D else "CollisionShape3D"
+	var new_shape = _create_collision_shape(shape_type, shape_properties, node_type)
+	if not new_shape:
+		return {"error": "Failed to create shape: %s" % shape_type}
+
+	# Get current shape for undo
+	var old_shape = node.shape
+
+	# Set the new shape
+	node.shape = new_shape
+
+	# Make undoable
+	var undo_redo = editor_interface.get_editor_undo_redo()
+	undo_redo.create_action("Change Collision Shape: %s" % node_path)
+	undo_redo.add_do_property(node, "shape", new_shape)
+	undo_redo.add_undo_property(node, "shape", old_shape)
+	undo_redo.commit_action()
+
 	return {"success": true}
 
 func set_node_visibility(node_path: String, visible: bool) -> Dictionary:
@@ -687,6 +747,164 @@ func _get_children_recursive(node: Node, result: Array) -> void:
 		result.append(str(child.get_path()))
 		_get_children_recursive(child, result)
 
+func _create_collision_shape(shape_type: String, shape_properties: Dictionary, node_type: String = "CollisionShape2D") -> Resource:
+	"""Create a collision shape based on type and properties"""
+	var is_3d = node_type == "CollisionShape3D"
+
+	if shape_type.is_empty():
+		# Default shapes based on node type
+		if is_3d:
+			var shape = BoxShape3D.new()
+			shape.size = Vector3(2, 2, 2)
+			return shape
+		else:
+			var shape = RectangleShape2D.new()
+			shape.size = Vector2(32, 32)
+			return shape
+
+	match shape_type:
+		# 2D Shapes
+		"RectangleShape2D":
+			var shape = RectangleShape2D.new()
+			var size = shape_properties.get("size", [32, 32])
+			shape.size = Vector2(size[0], size[1])
+			return shape
+
+		"CircleShape2D":
+			var shape = CircleShape2D.new()
+			var radius = shape_properties.get("radius", 16)
+			shape.radius = radius
+			return shape
+
+		"CapsuleShape2D":
+			var shape = CapsuleShape2D.new()
+			var radius = shape_properties.get("radius", 16)
+			var height = shape_properties.get("height", 32)
+			shape.radius = radius
+			shape.height = height
+			return shape
+
+		"ConvexPolygonShape2D":
+			var shape = ConvexPolygonShape2D.new()
+			var points = shape_properties.get("points", [])
+			if points.size() > 0:
+				var polygon = PackedVector2Array()
+				for point in points:
+					polygon.append(Vector2(point[0], point[1]))
+				shape.points = polygon
+			return shape
+
+		"ConcavePolygonShape2D":
+			var shape = ConcavePolygonShape2D.new()
+			var segments = shape_properties.get("segments", [])
+			if segments.size() > 0:
+				var polygon = PackedVector2Array()
+				for point in segments:
+					polygon.append(Vector2(point[0], point[1]))
+				shape.segments = polygon
+			return shape
+
+		"WorldBoundaryShape2D":
+			var shape = WorldBoundaryShape2D.new()
+			var normal = shape_properties.get("normal", [0, -1])
+			var distance = shape_properties.get("distance", 0)
+			shape.normal = Vector2(normal[0], normal[1])
+			shape.distance = distance
+			return shape
+
+		"SeparationRayShape2D":
+			var shape = SeparationRayShape2D.new()
+			var length = shape_properties.get("length", 20)
+			var slide_on_slope = shape_properties.get("slide_on_slope", false)
+			shape.length = length
+			shape.slide_on_slope = slide_on_slope
+			return shape
+
+		"SegmentShape2D":
+			var shape = SegmentShape2D.new()
+			var a = shape_properties.get("a", [0, 0])
+			var b = shape_properties.get("b", [20, 0])
+			shape.a = Vector2(a[0], a[1])
+			shape.b = Vector2(b[0], b[1])
+			return shape
+
+		# 3D Shapes
+		"BoxShape3D":
+			var shape = BoxShape3D.new()
+			var size = shape_properties.get("size", [2, 2, 2])
+			shape.size = Vector3(size[0], size[1], size[2])
+			return shape
+
+		"SphereShape3D":
+			var shape = SphereShape3D.new()
+			var radius = shape_properties.get("radius", 1)
+			shape.radius = radius
+			return shape
+
+		"CapsuleShape3D":
+			var shape = CapsuleShape3D.new()
+			var radius = shape_properties.get("radius", 1)
+			var height = shape_properties.get("height", 2)
+			shape.radius = radius
+			shape.height = height
+			return shape
+
+		"CylinderShape3D":
+			var shape = CylinderShape3D.new()
+			var radius = shape_properties.get("radius", 1)
+			var height = shape_properties.get("height", 2)
+			shape.radius = radius
+			shape.height = height
+			return shape
+
+		"ConvexPolygonShape3D":
+			var shape = ConvexPolygonShape3D.new()
+			var points = shape_properties.get("points", [])
+			if points.size() > 0:
+				var polygon = PackedVector3Array()
+				for point in points:
+					polygon.append(Vector3(point[0], point[1], point[2]))
+				shape.points = polygon
+			return shape
+
+		"ConcavePolygonShape3D":
+			var shape = ConcavePolygonShape3D.new()
+			var faces = shape_properties.get("faces", [])
+			if faces.size() > 0:
+				var polygon = PackedVector3Array()
+				for point in faces:
+					polygon.append(Vector3(point[0], point[1], point[2]))
+				shape.faces = polygon
+			return shape
+
+		"HeightMapShape3D":
+			var shape = HeightMapShape3D.new()
+			var map_width = shape_properties.get("map_width", 16)
+			var map_depth = shape_properties.get("map_depth", 16)
+			var map_data = shape_properties.get("map_data", [])
+			shape.map_width = map_width
+			shape.map_depth = map_depth
+			if map_data.size() > 0:
+				shape.map_data = PackedFloat32Array(map_data)
+			return shape
+
+		"WorldBoundaryShape3D":
+			var shape = WorldBoundaryShape3D.new()
+			var plane = shape_properties.get("plane", [0, 1, 0, 0])
+			shape.plane = Plane(plane[0], plane[1], plane[2], plane[3])
+			return shape
+
+		_:
+			# Default fallback based on node type
+			if is_3d:
+				var shape = BoxShape3D.new()
+				shape.size = Vector3(2, 2, 2)
+				return shape
+			else:
+				var shape = RectangleShape2D.new()
+				shape.size = Vector2(32, 32)
+				return shape
+
 func _validate_editor_access() -> String:
 	"""Validate that we have proper editor access, returns error message or empty string"""
 	if not Engine.is_editor_hint():
@@ -698,6 +916,25 @@ func _validate_editor_access() -> String:
 			return "EditorInterface not available"
 
 	return ""
+
+func _convert_node_property_value(value, property_name: String) -> Variant:
+	"""Convert value to proper Godot type based on property name"""
+	match property_name:
+		"position", "scale":
+			if value is Array and value.size() >= 2:
+				return Vector2(value[0], value[1])
+			elif value is Vector2:
+				return value
+		"modulate":
+			if value is Array and value.size() >= 4:
+				return Color(value[0], value[1], value[2], value[3])
+			elif value is Color:
+				return value
+		# Add more property-specific conversions as needed
+		_:
+			# For other properties, return as-is
+			return value
+	return value
 
 func _serialize_value(value) -> Variant:
 	"""Serialize a value for JSON transmission"""

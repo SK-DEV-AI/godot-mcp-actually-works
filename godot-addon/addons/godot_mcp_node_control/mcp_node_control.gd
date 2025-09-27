@@ -75,6 +75,7 @@ func _enter_tree() -> void:
 	_command_handlers = {
 		"get_scene_tree": _handle_get_scene_tree,
 		"create_node": _handle_create_node,
+		"change_collision_shape": _handle_change_collision_shape,
 		"delete_node": _handle_delete_node,
 		"get_node_properties": _handle_get_node_properties,
 		"set_node_property": _handle_set_node_property,
@@ -324,10 +325,8 @@ func _handle_command(client_id: int, command: Dictionary) -> void:
 
 		if _command_handlers.has(cmd_type):
 			var handler = _command_handlers[cmd_type]
-			if handler.get_argument_count() > 0:
-				response = handler.call(params)
-			else:
-				response = handler.call()
+			# All handlers take a params dictionary as their first argument
+			response = handler.call(params)
 		else:
 			response = {
 				"status": "error",
@@ -352,13 +351,29 @@ func _handle_create_node(params: Dictionary) -> Dictionary:
 	var node_type = params.get("node_type", "")
 	var parent_path = params.get("parent_path", ".")
 	var node_name = params.get("node_name", "")
+	var shape_type = params.get("shape_type", "")
+	var shape_properties = params.get("shape_properties", {})
 
 	if node_type.is_empty():
 		return {"status": "error", "error": "node_type is required"}
 
-	var result = node_utils.create_node(node_type, parent_path, node_name)
+	var result = node_utils.create_node(node_type, parent_path, node_name, shape_type, shape_properties)
 	if result.has("error"):
 		_log_error("create_node failed: %s" % result.error)
+		return result
+	return {"status": "success", "data": result}
+
+func _handle_change_collision_shape(params: Dictionary) -> Dictionary:
+	var node_path = params.get("node_path", "")
+	var shape_type = params.get("shape_type", "")
+	var shape_properties = params.get("shape_properties", {})
+
+	if node_path.is_empty() or shape_type.is_empty():
+		return {"status": "error", "error": "node_path and shape_type are required"}
+
+	var result = node_utils.change_collision_shape(node_path, shape_type, shape_properties)
+	if result.has("error"):
+		_log_error("change_collision_shape failed: %s" % result.error)
 		return result
 	return {"status": "success", "data": result}
 
