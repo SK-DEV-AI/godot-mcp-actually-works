@@ -86,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 📚 Documentation Updates
 
 ##### API Reference Expansion
-- **42 Total Tools**: Updated from 26 to 42 tools
+- **80 Total Tools**: Updated from 26 to 80 tools
 - **Animation System Section**: Complete documentation for all new tools
 - **Animation Examples**: Practical examples for animation workflows
 - **Godot Animation Concepts**: Comprehensive coverage of AnimationPlayer features
@@ -130,7 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Release Notes**: Version 1.4.0 introduces comprehensive animation system capabilities, expanding the MCP server from 26 to 42 tools. This release enables AI assistants to fully control Godot's AnimationPlayer system, providing complete animation creation, playback control, and keyframe manipulation through natural language commands.
+**Release Notes**: Version 1.4.0 introduces comprehensive animation system capabilities, expanding the MCP server from 26 to 80 tools. This release enables AI assistants to fully control Godot's AnimationPlayer system, providing complete animation creation, playback control, and keyframe manipulation through natural language commands.
 
 **Compatibility**: Maintains full backward compatibility with v1.0.0, v1.1.0, v1.2.0, and v1.3.0. All existing tools and functionality preserved.
 
@@ -186,7 +186,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 📚 Documentation Updates
 
 ##### API Reference Expansion
-- **42 Total Tools**: Updated from 35 to 42 tools
+- **80 Total Tools**: Updated from 35 to 80 tools
 - **Scene Management Section**: Complete documentation for all new tools
 - **Scene Examples**: Practical examples for scene management workflows
 - **Godot Scene Concepts**: Comprehensive coverage of scene lifecycle and operations
@@ -229,7 +229,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Release Notes**: Version 1.3.0 introduces comprehensive scene management capabilities, expanding the MCP server from 35 to 42 tools. This release enables AI assistants to fully control Godot's scene system, providing complete scene lifecycle management through natural language commands.
+**Release Notes**: Version 1.3.0 introduces comprehensive scene management capabilities, expanding the MCP server from 35 to 80 tools. This release enables AI assistants to fully control Godot's scene system, providing complete scene lifecycle management through natural language commands.
 
 **Compatibility**: Maintains full backward compatibility with v1.0.0, v1.1.0, and v1.2.0. All existing tools and functionality preserved.
 
@@ -286,7 +286,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 📚 Documentation Updates
 
 ##### API Reference Expansion
-- **35 Total Tools**: Updated from 29 to 35 tools (now 42 with scene management tools)
+- **80 Total Tools**: Updated from 29 to 80 tools (now 80 with scene management tools)
 - **Resource Management Section**: Complete documentation for all new tools
 - **Resource Examples**: Practical examples for asset management workflows
 - **Godot Resource Types**: Comprehensive coverage of supported resource types
@@ -329,7 +329,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Release Notes**: Version 1.2.0 introduces comprehensive resource management capabilities, expanding the MCP server from 29 to 35 tools. This release enables AI assistants to fully manipulate Godot's resource system, providing complete control over assets, dependencies, and file system operations.
+**Release Notes**: Version 1.2.0 introduces comprehensive resource management capabilities, expanding the MCP server from 29 to 80 tools. This release enables AI assistants to fully manipulate Godot's resource system, providing complete control over assets, dependencies, and file system operations.
 
 **Compatibility**: Maintains full backward compatibility with v1.0.0 and v1.1.0. All existing tools and functionality preserved.
 
@@ -393,7 +393,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### 📚 Documentation Updates
 
 ##### API Reference Expansion
-- **29 Total Tools**: Updated from 20 to 29 tools (now 35 with resource tools)
+- **80 Total Tools**: Updated from 20 to 80 tools (now 80 with resource tools)
 - **Script Management Section**: Complete documentation for all new tools
 - **Usage Examples**: Practical examples for script manipulation workflows
 - **Parameter Specifications**: Detailed parameter types and formats
@@ -434,7 +434,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Release Notes**: Version 1.1.0 introduces comprehensive script management capabilities, expanding the MCP server from 20 to 29 tools. This release enables AI assistants to fully manipulate GDScript code, variables, and functions, providing complete control over Godot's scripting system.
+**Release Notes**: Version 1.1.0 introduces comprehensive script management capabilities, expanding the MCP server from 20 to 80 tools. This release enables AI assistants to fully manipulate GDScript code, variables, and functions, providing complete control over Godot's scripting system.
 
 **Compatibility**: Maintains full backward compatibility with v1.0.0. All existing tools and functionality preserved.
 
@@ -461,7 +461,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Plugin Architecture**: Clean separation of concerns with modular components
 - **Async Communication**: Non-blocking WebSocket communication with automatic reconnection
 
-##### Node Control Tools (20 Complete Tools)
+##### Node Control Tools (80 Complete Tools)
 
 ###### Scene Management
 - `get_scene_tree()` - Complete scene hierarchy inspection with node types and paths
@@ -510,7 +510,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Connection Resilience**: Auto-reconnection and health monitoring
 
 ##### Documentation & Developer Experience
-- **Complete API Reference**: Detailed documentation for all 20 tools
+- **Complete API Reference**: Detailed documentation for all 80 tools
 - **Installation Guide**: Step-by-step setup for multiple platforms
 - **Architecture Documentation**: System design and component interactions
 - **Technology Research**: In-depth analysis of MCP, FastMCP, Godot 4.5, and GDScript

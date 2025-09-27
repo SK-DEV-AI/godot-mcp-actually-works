@@ -11,12 +11,14 @@ To create the most comprehensive and reliable MCP server for Godot Engine, provi
 ## Key Features
 
 ### 🎯 Complete Node Control
-- **20 specialized tools** covering all aspects of Godot node manipulation
+- **80 specialized tools** covering all aspects of Godot node manipulation and editor automation
 - **Full scene hierarchy management** with create, move, delete, and organize operations
 - **Property manipulation** for any Godot node property with type validation
 - **Transform controls** for position, rotation, and scale in both 2D and 3D
 - **Signal connections** for event-driven programming
 - **Script attachment** with GDScript validation and error handling
+- **Animation system control** with 32 comprehensive animation tools
+- **Resource management** with full asset lifecycle control
 
 ### 🤖 AI-First Design
 - **Context engineering** optimized for LLM tool usage
@@ -37,9 +39,9 @@ To create the most comprehensive and reliable MCP server for Godot Engine, provi
 ### Components
 
 1. **MCP Server** (`godot-mcp-server.py`)
-   - Built with FastMCP framework
-   - Exposes 20+ tools to AI assistants
-   - Handles WebSocket communication with Godot addon
+    - Built with FastMCP framework
+    - Exposes 80+ tools to AI assistants
+    - Handles WebSocket communication with Godot addon
 
 2. **Godot Addon** (`godot-addon/`)
    - Editor plugin that runs inside Godot
@@ -83,19 +85,24 @@ To create the most comprehensive and reliable MCP server for Godot Engine, provi
 ## Project Status
 
 ### ✅ Completed Features
-- Full MCP server implementation with 20 tools
+- Full MCP server implementation with 80 tools
 - Godot addon with WebSocket server
 - Comprehensive error handling and debugging
 - Context engineering for optimal LLM usage
 - Complete documentation and setup guides
+- **Scene Management**: Full scene lifecycle control (9 tools)
+- **Node Operations**: Complete node manipulation (6 tools)
+- **Script Management**: Full GDScript control (11 tools)
+- **Animation System**: Comprehensive animation control (32 tools)
+- **Resource Management**: Asset lifecycle management (6 tools)
 
-### 🚧 Future Roadmap
-- **Script Tools**: Advanced GDScript manipulation and generation
-- **Asset Management**: Texture, audio, and resource handling
-- **Animation System**: Timeline and keyframe control
-- **Physics Integration**: Collision shapes and rigidbody setup
-- **UI System**: Control node creation and layout
-- **Multi-Scene Support**: Cross-scene references and management
+### 🚧 Realistic Roadmap
+- **Editor Workflow Automation**: Leverage Godot's EditorScript and EditorPlugin APIs
+- **Scene Template System**: Create reusable scene configurations
+- **Node Preset System**: Save and apply node configurations
+- **Project Management Tools**: Automated project organization and validation
+- **Code Quality Tools**: Static analysis and development workflow improvements
+- **Asset Management**: Enhanced asset organization and optimization
 
 ## Quality Standards
 

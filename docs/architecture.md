@@ -57,35 +57,63 @@ async def create_node(node_type: str, parent_path: str = ".", node_name: str = "
     """Create a new node in the Godot scene"""
 ```
 
-### Tool Categories
+### Tool Categories (80 Total Tools)
 
-#### Scene Management Tools
+#### Scene Management Tools (9 tools)
 - `get_scene_tree()` - Complete scene hierarchy inspection
 - `run_scene()` / `stop_scene()` - Scene execution control
+- `get_current_scene_info()` - Scene metadata and information
+- `open_scene()` / `save_scene()` / `save_scene_as()` - Scene file operations
+- `create_new_scene()` - Create new scenes with root node types
+- `instantiate_scene()` - Load and instantiate scene files
+- `pack_scene_from_node()` - Create reusable scene files from nodes
 
-#### Node Lifecycle Tools
+#### Node Lifecycle Tools (6 tools)
 - `create_node()` - Node creation with type validation
 - `delete_node()` - Safe node removal
 - `move_node()` - Reparenting and renaming
 - `duplicate_node()` - Node cloning
+- `find_nodes_by_type()` - Type-based node searching
+- `get_node_children()` - Hierarchy traversal
 
-#### Property & Transform Tools
+#### Property & Transform Tools (4 tools)
 - `get_node_properties()` - Property inspection
 - `set_node_property()` - Property modification
 - `set_node_transform()` - Position/rotation/scale control
 - `set_node_visibility()` - Visibility toggling
 
-#### Signal & Method Tools
+#### Signal & Method Tools (4 tools)
 - `connect_signal()` - Event connection setup
 - `disconnect_signal()` - Event disconnection
 - `get_node_signals()` - Signal introspection
 - `get_node_methods()` - Method discovery
 - `call_node_method()` - Dynamic method execution
 
-#### Advanced Tools
-- `find_nodes_by_type()` - Type-based node searching
-- `get_node_children()` - Hierarchy traversal
+#### Script Management Tools (11 tools)
 - `add_script_to_node()` - GDScript attachment
+- `get_script_content()` / `set_script_content()` - Script source manipulation
+- `validate_script()` - GDScript syntax validation
+- `create_script_file()` / `load_script_file()` - Script file management
+- `get_script_variables()` / `set_script_variable()` - Exported variable control
+- `get_script_functions()` - Function introspection
+- `attach_script_to_node()` / `detach_script_from_node()` - Script file linking
+
+#### Resource Management Tools (6 tools)
+- `create_resource()` / `load_resource()` / `save_resource()` - Resource lifecycle
+- `get_resource_dependencies()` - Dependency analysis
+- `list_directory()` - File system exploration
+- `get_resource_metadata()` - Resource information
+
+#### Animation System Tools (32 tools)
+- Complete animation player management and control
+- Keyframe and track manipulation
+- Animation library organization
+- Playback control and sequencing
+
+#### Advanced Tools (8 tools)
+- `change_collision_shape()` - Collision shape modification
+- `get_debug_info()` - System diagnostics
+- `check_connection()` - Connection health monitoring
 
 ## 2. Godot Addon Component (`godot-addon/`)
 
