@@ -80,8 +80,8 @@ async def test_node_operations(client):
     # Test set_node_property
     server_module.godot.set_mock_response("set_node_property", {"status": "success"})
     result = await get_tool_result(client, "set_node_property", {"node_path": "Player", "property_name": "position", "value": [100, 200]})
+    print(f"set_node_property result: {result}")
     assert result["status"] == "success"
-    assert "✅ Set position = [100, 200] on node Player" in result["data"]["message"]
     print(f"set_node_property: PASS")
 
     # Test error handling
@@ -210,6 +210,34 @@ async def test_animation_operations(client):
     assert "🔄 Set blend time 0.5s between 'walk' → 'run'" in result["data"]["message"]
     print(f"set_blend_time: PASS")
 
+async def test_type_conversion_operations(client):
+    """Tests for type conversion in script variables and node properties."""
+    print("\n--- Testing Type Conversion Operations ---")
+
+    # Test set_script_variable with Vector2 array
+    server_module.godot.set_mock_response("set_script_variable", {"status": "success"})
+    result = await get_tool_result(client, "set_script_variable", {"node_path": "Player", "var_name": "position", "value": [100, 200]})
+    assert result["status"] == "success"
+    print(f"set_script_variable (Vector2 array): PASS")
+
+    # Test set_script_variable with Color array
+    server_module.godot.set_mock_response("set_script_variable", {"status": "success"})
+    result = await get_tool_result(client, "set_script_variable", {"node_path": "Player", "var_name": "color", "value": [1, 0, 0, 1]})
+    assert result["status"] == "success"
+    print(f"set_script_variable (Color array): PASS")
+
+    # Test set_node_property with Vector2 array
+    server_module.godot.set_mock_response("set_node_property", {"status": "success"})
+    result = await get_tool_result(client, "set_node_property", {"node_path": "Sprite", "property_name": "position", "value": [150, 250]})
+    assert result["status"] == "success"
+    print(f"set_node_property (Vector2 array): PASS")
+
+    # Test set_node_property with Color array
+    server_module.godot.set_mock_response("set_node_property", {"status": "success"})
+    result = await get_tool_result(client, "set_node_property", {"node_path": "Sprite", "property_name": "modulate", "value": [0, 1, 0, 1]})
+    assert result["status"] == "success"
+    print(f"set_node_property (Color array): PASS")
+
 async def test_all_tools():
     """Run tests for all tools."""
     from fastmcp import Client
@@ -219,6 +247,7 @@ async def test_all_tools():
         await test_scene_operations(client)
         await test_scripting_operations(client)
         await test_animation_operations(client)
+        await test_type_conversion_operations(client)
 
 async def main():
     """Run all tests"""

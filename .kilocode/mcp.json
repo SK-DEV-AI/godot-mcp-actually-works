@@ -88,7 +88,8 @@
         "set_animation_section_with_markers",
         "remove_animation_marker",
         "remove_animation_track",
-        "add_property_track"
+        "add_property_track",
+        "change_collision_shape"
       ]
     },
     "exa": {

@@ -222,24 +222,29 @@ func set_script_variable(node_path: String, var_name: String, value) -> Dictiona
 	# Check if variable exists and is exported
 	var property_list = node.get_property_list()
 	var found = false
+	var expected_type = -1
 	for prop in property_list:
 		if prop.name == var_name and prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE != 0:
 			found = true
+			expected_type = prop.type
 			break
 
 	if not found:
 		return {"error": "Exported variable not found: %s" % var_name}
 
+	# Convert value to proper Godot type
+	var converted_value = _convert_script_value(value, expected_type)
+
 	# Get old value for undo
 	var old_value = node.get(var_name)
 
 	# Set new value
-	node.set(var_name, value)
+	node.set(var_name, converted_value)
 
 	# Make undoable
 	var undo_redo = editor_interface.get_editor_undo_redo()
 	undo_redo.create_action("Set Script Variable: %s.%s" % [node_path, var_name])
-	undo_redo.add_do_property(node, var_name, value)
+	undo_redo.add_do_property(node, var_name, converted_value)
 	undo_redo.add_undo_property(node, var_name, old_value)
 	undo_redo.commit_action()
 
@@ -384,6 +389,34 @@ func _get_type_name(type: int) -> String:
 		TYPE_ARRAY: return "Array"
 		TYPE_DICTIONARY: return "Dictionary"
 		_: return "Variant"
+
+func _convert_script_value(value, expected_type: int) -> Variant:
+	"""Convert value to proper Godot type based on expected type"""
+	match expected_type:
+		TYPE_VECTOR2:
+			if value is Array and value.size() >= 2:
+				return Vector2(value[0], value[1])
+			elif value is Vector2:
+				return value
+		TYPE_VECTOR3:
+			if value is Array and value.size() >= 3:
+				return Vector3(value[0], value[1], value[2])
+			elif value is Vector3:
+				return value
+		TYPE_COLOR:
+			if value is Array and value.size() >= 4:
+				return Color(value[0], value[1], value[2], value[3])
+			elif value is Color:
+				return value
+		TYPE_QUATERNION:
+			if value is Array and value.size() >= 4:
+				return Quaternion(value[0], value[1], value[2], value[3])
+			elif value is Quaternion:
+				return value
+		_:
+			# For other types, return as-is
+			return value
+	return value
 
 func _serialize_value(value) -> Variant:
 	"""Serialize a value for JSON transmission"""
